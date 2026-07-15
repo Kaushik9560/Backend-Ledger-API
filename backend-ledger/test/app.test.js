@@ -127,4 +127,19 @@ test("ledger backend smoke flow", async (t) => {
         assert.equal(balanceResponse.status, 200)
         assert.equal(balanceResponse.body.balance, 5000)
     })
+
+    await t.test("rejects stale tokens when the user record no longer exists", async () => {
+        const staleToken = jwt.sign(
+            { userId: new mongoose.Types.ObjectId().toString() },
+            process.env.JWT_SECRET,
+            { expiresIn: "3d" }
+        )
+
+        const response = await request(app)
+            .get("/api/accounts")
+            .set("Authorization", `Bearer ${staleToken}`)
+
+        assert.equal(response.status, 401)
+        assert.equal(response.body.message, "Unauthorized access, user no longer exists")
+    })
 })

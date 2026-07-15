@@ -7,8 +7,10 @@
     "test": "node --test --test-concurrency=1",
     "dev": "nodemon server.js",
     "dev:memory": "node scripts/dev-memory.js",
-    "frontend:dev": "npm --prefix ..\\ledger-frontend run dev",
-    "frontend:build": "npm --prefix ..\\ledger-frontend run build",
+    "frontend:install": "node scripts/run-frontend.js install --include=dev",
+    "frontend:dev": "node scripts/run-frontend.js dev",
+    "frontend:build": "node scripts/run-frontend.js build",
+    "build": "npm run frontend:install && npm run frontend:build",
     "dev:full": "concurrently \"npm run dev:memory\" \"npm run frontend:dev\"",
     "start": "node server.js"
   },

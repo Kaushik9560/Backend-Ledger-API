@@ -1,6 +1,6 @@
 # Ledger Frontend
 
-React + TypeScript + Vite frontend for the SpendWise ledger API.
+React + JavaScript + Vite frontend for the SpendWise ledger API.
 
 ## Features
 
@@ -31,6 +31,13 @@ VITE_API_BASE_URL=http://localhost:3000
 | `npm run dev` | Starts the Vite dev server |
 | `npm run build` | Creates a production build |
 | `npm run preview` | Serves the production build locally |
+
+## Structure
+
+- `src/App.jsx` coordinates state and data loading
+- `src/components/` contains reusable UI pieces
+- `src/sections/` contains tab-level screens
+- `src/lib/` contains format, storage, and analytics helpers
 
 ## Run
 

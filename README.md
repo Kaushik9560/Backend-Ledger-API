@@ -5,7 +5,7 @@ SpendWise is a full-stack personal finance tracker built with a Node.js/Express 
 This repository contains both parts of the project:
 
 - `backend-ledger/` - Express, MongoDB, JWT auth, ledger logic, automated tests
-- `ledger-frontend/` - React, TypeScript, Vite single-page application
+- `ledger-frontend/` - React, JavaScript, Vite single-page application
 
 ## Why This Project Stands Out
 
@@ -20,7 +20,7 @@ This repository contains both parts of the project:
 | Layer | Stack |
 | --- | --- |
 | Backend | Node.js, Express, MongoDB, Mongoose |
-| Frontend | React 19, TypeScript, Vite |
+| Frontend | React 19, JavaScript, Vite |
 | Auth | JWT, HTTP cookies |
 | Testing | `node:test`, Supertest, `mongodb-memory-server` |
 
@@ -127,6 +127,20 @@ Frontend production build:
 cd ledger-frontend
 npm run build
 ```
+
+## Production Run
+
+The backend can now serve the built frontend in production, so the app can run as a single deployable service.
+
+```powershell
+cd backend-ledger
+npm install
+npm run build
+$env:NODE_ENV="production"
+npm start
+```
+
+Open `http://localhost:3000`.
 
 ## API Summary
 

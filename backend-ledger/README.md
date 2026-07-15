@@ -19,6 +19,7 @@ This service powers the SpendWise app with JWT auth, account creation, ledger-ba
 | `npm test` | Runs the backend smoke tests |
 | `npm run frontend:dev` | Starts the frontend from this folder |
 | `npm run frontend:build` | Builds the frontend from this folder |
+| `npm run build` | Installs frontend deps and builds the production frontend bundle |
 
 ## Setup
 
@@ -80,6 +81,16 @@ The test suite covers:
 - account creation and account listing
 - initial account funding through the system transaction endpoint
 - balance computation from ledger entries
+
+## Production Hosting
+
+When `NODE_ENV=production` and `../ledger-frontend/dist` exists, the backend serves the built frontend as a single deployable app.
+
+```powershell
+npm run build
+$env:NODE_ENV="production"
+npm start
+```
 
 ## API Overview
 
