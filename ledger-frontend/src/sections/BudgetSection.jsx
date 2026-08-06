@@ -19,7 +19,7 @@ export default function BudgetSection({
                 <p className="budget-hint">Set monthly spending limits per category. Progress is calculated from this month's expenses.</p>
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                     <button id="seed-data-btn" className="btn btn-secondary" onClick={() => void onSeedData()} disabled={busyAction === "seeding"}>
-                        {busyAction === "seeding" ? <><span className="spinner" /> Seeding...</> : <>{Icon.seed} Load Demo Data</>}
+                        {busyAction === "seeding" ? <><span className="spinner" /> Seeding...</> : <>{Icon.seed} Load demo data</>}
                     </button>
                     <button id="export-csv-btn" className="btn btn-secondary" onClick={onExportCSV}>
                         {Icon.download} Export CSV

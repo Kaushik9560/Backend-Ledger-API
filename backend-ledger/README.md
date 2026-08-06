@@ -35,12 +35,15 @@ PORT=3000
 MONGO_URI=mongodb://127.0.0.1:27017/backend-ledger
 JWT_SECRET=replace-with-a-long-random-secret
 CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173
+COOKIE_SAME_SITE=lax
+AUTH_RETURN_TOKEN=false
 EMAIL_ENABLED=false
 EMAIL_USER=
 CLIENT_ID=
 CLIENT_SECRET=
 REFRESH_TOKEN=
-TRANSACTION_PROCESSING_DELAY_MS=15000
+API_RATE_LIMIT_MAX=300
+AUTH_RATE_LIMIT_MAX=20
 ```
 
 ## Recommended Way To Run
@@ -100,6 +103,7 @@ npm start
 | --- | --- |
 | `POST` | `/api/auth/register` |
 | `POST` | `/api/auth/login` |
+| `GET` | `/api/auth/session` |
 | `POST` | `/api/auth/logout` |
 
 ### Accounts

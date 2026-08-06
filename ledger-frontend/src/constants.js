@@ -1,30 +1,19 @@
 export const CATEGORY_META = {
-    "Food & Dining": { icon: "🍔", color: "var(--cat-food)" },
-    Transport: { icon: "🚗", color: "var(--cat-transport)" },
-    Shopping: { icon: "🛍️", color: "var(--cat-shopping)" },
-    "Bills & Utilities": { icon: "⚡", color: "var(--cat-bills)" },
-    Entertainment: { icon: "🎬", color: "var(--cat-entertainment)" },
-    "Health & Medical": { icon: "🏥", color: "var(--cat-health)" },
-    Education: { icon: "📚", color: "var(--cat-education)" },
-    Travel: { icon: "✈️", color: "var(--cat-travel)" },
-    "Salary & Income": { icon: "💼", color: "var(--cat-salary)" },
-    Investments: { icon: "📈", color: "var(--cat-investments)" },
-    "Rent & Housing": { icon: "🏠", color: "var(--cat-rent)" },
-    Others: { icon: "📦", color: "var(--cat-others)" }
+    "Food & Dining": { icon: "FD", color: "var(--cat-food)" },
+    Transport: { icon: "TR", color: "var(--cat-transport)" },
+    Shopping: { icon: "SH", color: "var(--cat-shopping)" },
+    "Bills & Utilities": { icon: "BU", color: "var(--cat-bills)" },
+    Entertainment: { icon: "EN", color: "var(--cat-entertainment)" },
+    "Health & Medical": { icon: "HM", color: "var(--cat-health)" },
+    Education: { icon: "ED", color: "var(--cat-education)" },
+    Travel: { icon: "TV", color: "var(--cat-travel)" },
+    "Salary & Income": { icon: "IN", color: "var(--cat-salary)" },
+    Investments: { icon: "IV", color: "var(--cat-investments)" },
+    "Rent & Housing": { icon: "RH", color: "var(--cat-rent)" },
+    Others: { icon: "OT", color: "var(--cat-others)" }
 }
 
 export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-export const AUTH_FEATURES = [
-    { icon: "📊", text: "Visual analytics & insights" },
-    { icon: "🏷️", text: "Category-based tracking" },
-    { icon: "🔐", text: "JWT auth + secure sessions" },
-    { icon: "⚡", text: "Real-time balance from ledger" },
-    { icon: "🔄", text: "Account-to-account transfers" },
-    { icon: "🗂️", text: "Double-entry bookkeeping" }
-]
-
-export const TECH_STACK = ["Node.js", "Express", "MongoDB", "React", "JavaScript"]
 
 export const PAGE_TITLES = {
     dashboard: "Dashboard",
@@ -32,18 +21,18 @@ export const PAGE_TITLES = {
     analytics: "Analytics",
     accounts: "Accounts",
     transfer: "Transfer",
-    budget: "Budgets"
+    budget: "Budget"
 }
 
 export function getPageSubtitle(activeTab, user) {
     const firstName = user.name.split(" ")[0]
     const subtitles = {
-        dashboard: `Good day, ${firstName}!`,
-        expenses: "All your transactions in one place",
-        analytics: "Insights into your spending",
-        accounts: "Manage your bank accounts",
-        transfer: "Move funds between accounts",
-        budget: "Set monthly limits per category"
+        dashboard: `Good to see you, ${firstName}`,
+        expenses: "Review income and spending in one place",
+        analytics: "Understand where your money goes",
+        accounts: "Manage your linked accounts",
+        transfer: "Move money between your accounts",
+        budget: "Plan monthly spending by category"
     }
 
     return subtitles[activeTab]

@@ -25,11 +25,12 @@ const transactionSchema = new mongoose.Schema({
     amount: {
         type: Number,
         required: [ true, "Amount is required for creating a transaction" ],
-        min: [ 0, "Transaction amount cannot be negative" ]
+        min: [ 0.01, "Transaction amount must be greater than zero" ]
     },
     idempotencyKey: {
         type: String,
         required: [ true, "Idempotency Key is required for creating a transaction" ],
+        maxlength: [ 128, "Idempotency key cannot exceed 128 characters" ],
         index: true,
         unique: true
     }

@@ -1,4 +1,5 @@
 import { Icon } from "../icons"
+import BrandMark from "./BrandMark"
 
 export default function AppSidebar({
     user,
@@ -7,17 +8,16 @@ export default function AppSidebar({
     health,
     busyAction,
     onSetActiveTab,
-    onShowModal,
     onHealthCheck,
     onLogout
 }) {
     return (
         <aside className="sidebar">
             <div className="sidebar-logo">
-                <div className="logo-mark">💰</div>
+                <div className="logo-mark"><BrandMark /></div>
                 <div className="logo-text">
                     SpendWise
-                    <span>Finance Tracker</span>
+                    <span>Personal finance</span>
                 </div>
             </div>
 
@@ -37,14 +37,6 @@ export default function AppSidebar({
             </nav>
 
             <div className="sidebar-bottom">
-                <button
-                    id="sidebar-add-btn"
-                    className="btn btn-primary btn-full sidebar-add-btn"
-                    onClick={onShowModal}
-                >
-                    {Icon.plus} Add Transaction
-                </button>
-
                 <div className="sidebar-user">
                     <div className="user-avatar">{user.name[0].toUpperCase()}</div>
                     <div className="user-info">
@@ -54,14 +46,16 @@ export default function AppSidebar({
                 </div>
 
                 <div className="sidebar-status-row">
-                    <div
-                        className={`status-pill dot-${health}`}
+                    <button
+                        className="status-pill"
                         onClick={() => void onHealthCheck()}
                         id="sidebar-health-pill"
+                        type="button"
+                        aria-label="Check service status"
                     >
                         <span className={`status-dot dot-${health}`} />
-                        <span>{health === "online" ? "API Online" : health === "offline" ? "Offline" : "Connecting..."}</span>
-                    </div>
+                        <span>{health === "online" ? "Service online" : health === "offline" ? "Offline" : "Connecting..."}</span>
+                    </button>
                     <button
                         id="nav-logout"
                         className="icon-btn logout-btn"

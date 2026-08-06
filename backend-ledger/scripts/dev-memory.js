@@ -1,4 +1,4 @@
-require("dotenv").config()
+require("dotenv").config({ quiet: true })
 
 const mongoose = require("mongoose")
 const { MongoMemoryReplSet } = require("mongodb-memory-server")
@@ -22,10 +22,21 @@ async function startInMemoryServer() {
         console.log("Using in-memory MongoDB replica set")
     })
 
+    let isShuttingDown = false
     const shutdown = async () => {
+        if (isShuttingDown) {
+            return
+        }
+
+        isShuttingDown = true
+
         server.close(async () => {
             await mongoose.disconnect()
-            await replSet.stop()
+            try {
+                await replSet.stop()
+            } catch (error) {
+                console.warn("In-memory MongoDB was already stopped:", error.message)
+            }
             process.exit(0)
         })
     }

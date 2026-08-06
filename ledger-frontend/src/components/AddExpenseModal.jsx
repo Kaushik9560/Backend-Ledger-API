@@ -31,10 +31,10 @@ export default function AddExpenseModal({ accounts, onClose, onSubmit, busy }) {
 
     return (
         <div className="modal-overlay" ref={overlayRef} onClick={handleOverlayClick}>
-            <div className="modal" role="dialog" aria-modal="true" aria-label="Add Transaction">
+            <div className="modal" role="dialog" aria-modal="true" aria-label="Add transaction">
                 <div className="modal-header">
-                    <h2 className="modal-title">Add Transaction</h2>
-                    <button className="icon-btn" onClick={onClose} id="modal-close-btn">
+                    <h2 className="modal-title">Add transaction</h2>
+                    <button className="icon-btn" onClick={onClose} id="modal-close-btn" type="button" aria-label="Close transaction form">
                         {Icon.close}
                     </button>
                 </div>
@@ -177,8 +177,8 @@ export default function AddExpenseModal({ accounts, onClose, onSubmit, busy }) {
                         {busy
                             ? <><span className="spinner" /> Saving...</>
                             : form.type === "income"
-                                ? <>{Icon.income} Record Income</>
-                                : <>{Icon.expense} Add Expense</>}
+                                ? <>{Icon.income} Record income</>
+                                : <>{Icon.expense} Add expense</>}
                     </button>
                 </form>
             </div>

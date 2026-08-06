@@ -3,24 +3,34 @@ const defaultBaseUrl = import.meta.env.DEV
     : window.location.origin
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || defaultBaseUrl).replace(/\/$/, "")
+const REQUEST_TIMEOUT_MS = 15000
 
 async function request(path, options = {}) {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     const headers = {}
 
     if (options.body) {
         headers["Content-Type"] = "application/json"
     }
 
-    if (options.token) {
-        headers.Authorization = `Bearer ${options.token}`
+    let response
+    try {
+        response = await fetch(`${API_BASE_URL}${path}`, {
+            method: options.method || "GET",
+            headers,
+            credentials: "include",
+            body: options.body ? JSON.stringify(options.body) : undefined,
+            signal: controller.signal
+        })
+    } catch (error) {
+        if (error.name === "AbortError") {
+            throw new Error("The server is taking too long to respond. Please try again.")
+        }
+        throw new Error("Unable to connect to the server. Check your connection and try again.")
+    } finally {
+        window.clearTimeout(timeout)
     }
-
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-        method: options.method || "GET",
-        headers,
-        credentials: "include",
-        body: options.body ? JSON.stringify(options.body) : undefined
-    })
 
     const contentType = response.headers.get("content-type") || ""
     const payload = contentType.includes("application/json")
@@ -29,7 +39,7 @@ async function request(path, options = {}) {
 
     if (!response.ok) {
         const message = typeof payload === "string"
-            ? payload
+            ? (contentType.includes("text/html") ? "Something went wrong on the server. Please try again." : payload)
             : payload.message || "Request failed"
 
         if (response.status === 401 && typeof window !== "undefined") {
@@ -57,25 +67,21 @@ export const ledgerApi = {
     login: (payload) =>
         request("/api/auth/login", { method: "POST", body: payload }),
 
-    logout: (token) =>
-        request("/api/auth/logout", { method: "POST", token }),
+    session: () => request("/api/auth/session"),
 
-    listAccounts: (token) =>
-        request("/api/accounts", { token }),
+    logout: () => request("/api/auth/logout", { method: "POST" }),
 
-    createAccount: (token) =>
-        request("/api/accounts", { method: "POST", token }),
+    listAccounts: () => request("/api/accounts"),
 
-    getBalance: (token, accountId) =>
-        request(`/api/accounts/balance/${accountId}`, { token }),
+    createAccount: () => request("/api/accounts", { method: "POST" }),
 
-    transfer: (token, payload) =>
-        request("/api/transactions", { method: "POST", token, body: payload }),
+    getBalance: (accountId) => request(`/api/accounts/balance/${accountId}`),
 
-    createExpense: (token, payload) =>
-        request("/api/expenses", { method: "POST", token, body: payload }),
+    transfer: (payload) => request("/api/transactions", { method: "POST", body: payload }),
 
-    listExpenses: (token, params) => {
+    createExpense: (payload) => request("/api/expenses", { method: "POST", body: payload }),
+
+    listExpenses: (params) => {
         const queryString = params
             ? `?${new URLSearchParams(
                 Object.entries(params)
@@ -84,10 +90,10 @@ export const ledgerApi = {
             ).toString()}`
             : ""
 
-        return request(`/api/expenses${queryString}`, { token })
+        return request(`/api/expenses${queryString}`)
     },
 
-    getExpenseSummary: (token, params) => {
+    getExpenseSummary: (params) => {
         const queryString = params
             ? `?${new URLSearchParams(
                 Object.entries(params)
@@ -96,12 +102,10 @@ export const ledgerApi = {
             ).toString()}`
             : ""
 
-        return request(`/api/expenses/summary${queryString}`, { token })
+        return request(`/api/expenses/summary${queryString}`)
     },
 
-    deleteExpense: (token, id) =>
-        request(`/api/expenses/${id}`, { method: "DELETE", token }),
+    deleteExpense: (id) => request(`/api/expenses/${id}`, { method: "DELETE" }),
 
-    getCategories: (token) =>
-        request("/api/expenses/categories", { token })
+    getCategories: () => request("/api/expenses/categories")
 }

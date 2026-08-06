@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: spendwise
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    maxShutdownDelaySeconds: 30
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
+      - key: EMAIL_ENABLED
+        value: "false"
+      - key: COOKIE_SAME_SITE
+        value: lax
+      - key: AUTH_RETURN_TOKEN
+        value: "false"
+      - key: API_RATE_LIMIT_MAX
+        value: "300"
+      - key: AUTH_RATE_LIMIT_MAX
+        value: "20"

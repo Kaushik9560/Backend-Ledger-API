@@ -4,7 +4,16 @@ const accountModel = require("../models/account.model")
 const emailService = require("../services/email.service")
 const mongoose = require("mongoose")
 
-const TRANSACTION_PROCESSING_DELAY_MS = Number(process.env.TRANSACTION_PROCESSING_DELAY_MS) || 15000
+function isPositiveAmount(value) {
+    const amount = Number(value)
+    return Number.isFinite(amount) && amount > 0 && amount <= Number.MAX_SAFE_INTEGER
+}
+
+function transactionMatches(existingTransaction, { fromAccount, toAccount, amount }) {
+    return existingTransaction.fromAccount.toString() === fromAccount.toString()
+        && existingTransaction.toAccount.toString() === toAccount.toString()
+        && existingTransaction.amount === Number(amount)
+}
 
 /**
  * - Create a new transaction
@@ -26,25 +35,47 @@ async function createTransaction(req, res) {
     /**
      * 1. Validate request
      */
-    const { fromAccount, toAccount, amount, idempotencyKey } = req.body
+    const { fromAccount, toAccount, amount, idempotencyKey } = req.body || {}
 
-    if (!fromAccount || !toAccount || !amount || !idempotencyKey) {
+    if (!fromAccount || !toAccount || amount === undefined || typeof idempotencyKey !== "string" || !idempotencyKey.trim()) {
         return res.status(400).json({
             message: "FromAccount, toAccount, amount and idempotencyKey are required"
         })
     }
 
+    if (!mongoose.isObjectIdOrHexString(fromAccount) || !mongoose.isObjectIdOrHexString(toAccount)) {
+        return res.status(400).json({ message: "Invalid fromAccount or toAccount" })
+    }
+
+    if (!isPositiveAmount(amount)) {
+        return res.status(400).json({ message: "Amount must be a positive number" })
+    }
+
+    if (idempotencyKey.trim().length > 128) {
+        return res.status(400).json({ message: "Idempotency key cannot exceed 128 characters" })
+    }
+
+    if (fromAccount.toString() === toAccount.toString()) {
+        return res.status(400).json({ message: "Source and destination accounts must be different" })
+    }
+
+    const normalizedIdempotencyKey = idempotencyKey.trim()
+    const parsedAmount = Number(amount)
+
     const fromUserAccount = await accountModel.findOne({
         _id: fromAccount,
+        user: req.user._id
     })
 
-    const toUserAccount = await accountModel.findOne({
-        _id: toAccount,
-    })
+    if (!fromUserAccount) {
+        return res.status(403).json({ message: "You can only transfer from your own account" })
+    }
 
-    if (!fromUserAccount || !toUserAccount) {
+    const toUserAccount = await accountModel.findById(toAccount)
+
+    if (!toUserAccount) {
         return res.status(400).json({
-            message: "Invalid fromAccount or toAccount"
+            message: "Invalid toAccount"
         })
     }
 
@@ -53,10 +84,16 @@ async function createTransaction(req, res) {
      */
 
     const isTransactionAlreadyExists = await transactionModel.findOne({
-        idempotencyKey: idempotencyKey
+        idempotencyKey: normalizedIdempotencyKey
     })
 
     if (isTransactionAlreadyExists) {
+        if (!transactionMatches(isTransactionAlreadyExists, { fromAccount, toAccount, amount: parsedAmount })) {
+            return res.status(409).json({
+                message: "Idempotency key has already been used for a different transaction"
+            })
+        }
+
         if (isTransactionAlreadyExists.status === "COMPLETED") {
             return res.status(200).json({
                 message: "Transaction already processed",
@@ -94,65 +131,73 @@ async function createTransaction(req, res) {
         })
     }
 
-    /**
-     * 4. Derive sender balance from ledger
-     */
-    const balance = await fromUserAccount.getBalance()
-
-    if (balance < amount) {
-        return res.status(400).json({
-            message: `Insufficient balance. Current balance is ${balance}. Requested amount is ${amount}`
-        })
-    }
-
     let transaction;
     let session;
     try {
-
-
         /**
-         * 5. Create transaction (PENDING)
+         * 4. Lock the source account and derive its balance in this transaction.
+         * The account write makes concurrent transfers conflict instead of both
+         * spending the same ledger balance.
          */
         session = await mongoose.startSession()
         session.startTransaction()
 
+        await accountModel.updateOne(
+            { _id: fromUserAccount._id, user: req.user._id, status: "ACTIVE" },
+            { $set: { lastTransactionAt: new Date() } },
+            { session }
+        )
+
+        const balance = await fromUserAccount.getBalance({ session })
+
+        if (balance < parsedAmount) {
+            await session.abortTransaction()
+            return res.status(400).json({
+                message: `Insufficient balance. Current balance is ${balance}. Requested amount is ${parsedAmount}`
+            })
+        }
+
+        /**
+         * 5. Create transaction (PENDING)
+         */
+
         transaction = (await transactionModel.create([ {
             fromAccount,
             toAccount,
-            amount,
-            idempotencyKey,
+            amount: parsedAmount,
+            idempotencyKey: normalizedIdempotencyKey,
             status: "PENDING"
         } ], { session }))[ 0 ]
 
         await ledgerModel.create([ {
             account: fromAccount,
-            amount: amount,
+            amount: parsedAmount,
             transaction: transaction._id,
             type: "DEBIT"
         } ], { session })
 
         await ledgerModel.create([ {
             account: toAccount,
-            amount: amount,
+            amount: parsedAmount,
             transaction: transaction._id,
             type: "CREDIT"
         } ], { session })
 
-        await transactionModel.findOneAndUpdate(
-            { _id: transaction._id },
-            { status: "COMPLETED" },
-            { session }
-        )
+        transaction.status = "COMPLETED"
+        await transaction.save({ session })
 
 
         await session.commitTransaction()
     } catch (error) {
-        if (session) {
+        if (session?.inTransaction()) {
             await session.abortTransaction()
         }
 
-        return res.status(400).json({
-            message: "Transaction is Pending due to some issue, please retry after sometime",
+        console.error("createTransaction error:", error.message)
+        return res.status(error.code === 11000 ? 409 : 503).json({
+            message: error.code === 11000
+                ? "This idempotency key is already being processed"
+                : "Transaction could not be completed safely. Please retry with the same idempotency key."
         })
     } finally {
         if (session) {
@@ -163,7 +208,7 @@ async function createTransaction(req, res) {
     /**
      * 10. Send email notification
      */
-    await emailService.sendTransactionEmail(req.user.email, req.user.name, amount, toAccount)
+    await emailService.sendTransactionEmail(req.user.email, req.user.name, parsedAmount, toAccount)
 
     return res.status(201).json({
         message: "Transaction completed successfully",
@@ -173,13 +218,28 @@ async function createTransaction(req, res) {
 }
 
 async function createInitialFundsTransaction(req, res) {
-    const { toAccount, amount, idempotencyKey } = req.body
+    const { toAccount, amount, idempotencyKey } = req.body || {}
 
-    if (!toAccount || !amount || !idempotencyKey) {
+    if (!toAccount || amount === undefined || typeof idempotencyKey !== "string" || !idempotencyKey.trim()) {
         return res.status(400).json({
             message: "toAccount, amount and idempotencyKey are required"
         })
     }
+
+    if (!mongoose.isObjectIdOrHexString(toAccount)) {
+        return res.status(400).json({ message: "Invalid toAccount" })
+    }
+
+    if (!isPositiveAmount(amount)) {
+        return res.status(400).json({ message: "Amount must be a positive number" })
+    }
+
+    const normalizedIdempotencyKey = idempotencyKey.trim()
+    if (normalizedIdempotencyKey.length > 128) {
+        return res.status(400).json({ message: "Idempotency key cannot exceed 128 characters" })
+    }
+
+    const parsedAmount = Number(amount)
 
     const toUserAccount = await accountModel.findOne({
         _id: toAccount,
@@ -201,30 +261,57 @@ async function createInitialFundsTransaction(req, res) {
         })
     }
 
+    const existingTransaction = await transactionModel.findOne({
+        idempotencyKey: normalizedIdempotencyKey
+    })
+
+    if (existingTransaction) {
+        if (!transactionMatches(existingTransaction, {
+            fromAccount: fromUserAccount._id,
+            toAccount,
+            amount: parsedAmount
+        })) {
+            return res.status(409).json({
+                message: "Idempotency key has already been used for a different transaction"
+            })
+        }
+
+        return res.status(200).json({
+            message: "Initial funds transaction already processed",
+            transaction: existingTransaction
+        })
+    }
+
 
     let session;
     try {
         session = await mongoose.startSession()
         session.startTransaction()
 
+        await accountModel.updateMany(
+            { _id: { $in: [fromUserAccount._id, toUserAccount._id] } },
+            { $set: { lastTransactionAt: new Date() } },
+            { session }
+        )
+
         const transaction = new transactionModel({
             fromAccount: fromUserAccount._id,
             toAccount,
-            amount,
-            idempotencyKey,
+            amount: parsedAmount,
+            idempotencyKey: normalizedIdempotencyKey,
             status: "PENDING"
         })
 
         await ledgerModel.create([ {
             account: fromUserAccount._id,
-            amount: amount,
+            amount: parsedAmount,
             transaction: transaction._id,
             type: "DEBIT"
         } ], { session })
 
         await ledgerModel.create([ {
             account: toAccount,
-            amount: amount,
+            amount: parsedAmount,
             transaction: transaction._id,
             type: "CREDIT"
         } ], { session })
@@ -239,7 +326,7 @@ async function createInitialFundsTransaction(req, res) {
             transaction: transaction
         })
     } catch (error) {
-        if (session) {
+        if (session?.inTransaction()) {
             await session.abortTransaction()
         }
 
@@ -259,4 +346,3 @@ module.exports = {
     createTransaction,
     createInitialFundsTransaction
 }
-

@@ -29,8 +29,3 @@ export function fmtRelative(dateStr) {
 export function genIdem() {
     return `idem_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 }
-
-export function maskToken(token) {
-    if (!token || token.length <= 10) return token || "—"
-    return `${token.slice(0, 8)}...${token.slice(-6)}`
-}

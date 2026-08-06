@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SpendWise Interview Guide</title>
+<style>
+@page { size: A4; margin: 17mm 16mm; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #172033; font-size: 10.5pt; line-height: 1.46; }
+.cover { min-height: 245mm; display: flex; flex-direction: column; justify-content: center; padding: 18mm 8mm; page-break-after: always; }
+.eyebrow { color: #6758e8; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; font-size: 9pt; }
+h1 { margin: 8px 0 12px; font-size: 34pt; line-height: 1.08; color: #11182a; }
+.subtitle { max-width: 540px; color: #536078; font-size: 15pt; line-height: 1.5; }
+.project { margin-top: 26px; padding: 18px 20px; border-left: 5px solid #6758e8; background: #f3f1ff; border-radius: 6px; }
+.project strong { display: block; margin-bottom: 5px; font-size: 13pt; }
+.rule { margin-top: 32px; color: #536078; font-size: 10.5pt; }
+.rule b { color: #172033; }
+.question { page-break-inside: avoid; margin: 0 0 17px; padding: 15px 17px; border: 1px solid #dfe3ec; border-radius: 9px; background: #fff; }
+.number { display: inline-block; min-width: 27px; height: 27px; padding-top: 5px; margin-right: 7px; border-radius: 50%; background: #6758e8; color: white; text-align: center; font-weight: 700; font-size: 9pt; vertical-align: middle; }
+h2 { display: inline; margin: 0; color: #11182a; font-size: 13pt; line-height: 1.35; vertical-align: middle; }
+.answer { margin: 11px 0 8px; }
+.cue { margin: 0; padding: 7px 10px; background: #f3f1ff; border-radius: 5px; color: #4438b8; font-size: 9.5pt; }
+.cue strong { color: #2c2385; }
+.closing { margin-top: 20px; padding: 16px; background: #172033; color: white; border-radius: 9px; page-break-inside: avoid; }
+.closing h3 { margin: 0 0 8px; font-size: 13pt; }
+.closing p { margin: 0; }
+.page-title { margin: 0 0 18px; font-size: 21pt; color: #11182a; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="eyebrow">Backend Interview Preparation</div>
+  <h1>SpendWise<br>10 Essential Questions</h1>
+  <p class="subtitle">Short, natural answers based on the original backend-ledger project. Designed to be spoken clearly in an interview without memorizing complicated terms.</p>
+  <div class="project">
+    <strong>30-second project introduction</strong>
+    “SpendWise is a personal finance backend built with Node.js, Express and MongoDB. Users can register, create accounts and transfer money. Instead of storing a changing balance, the system calculates balance from credit and debit ledger entries. I also used JWT authentication, database transactions and idempotency to make the APIs safer.”
+  </div>
+  <p class="rule"><b>Easy answer rule:</b> Say what it does, why you used it, and one small example. Stop after that unless the interviewer asks for more.</p>
+</section>
+
+<main>
+<h1 class="page-title">The 10 Most Important Questions</h1>
+
+<section class="question">
+  <span class="number">1</span><h2>What problem does this project solve?</h2>
+  <p class="answer">It provides backend APIs for a personal finance application. A user can register, create accounts, check balances and transfer money. The main goal was to manage financial records safely and keep a clear history of every balance change.</p>
+  <p class="cue"><strong>Remember:</strong> User → Account → Balance → Transfer.</p>
+</section>
+
+<section class="question">
+  <span class="number">2</span><h2>Which technologies did you use?</h2>
+  <p class="answer">I used Node.js and Express to build the REST APIs. I used MongoDB as the database and Mongoose for schemas and database operations. JWT handles authentication, and bcrypt hashes user passwords.</p>
+  <p class="cue"><strong>Remember:</strong> Express API, MongoDB data, JWT auth, bcrypt passwords.</p>
+</section>
+
+<section class="question">
+  <span class="number">3</span><h2>How is the project structured?</h2>
+  <p class="answer">I separated the code into routes, controllers, models, middleware and configuration. Routes define API URLs, controllers contain the business logic, models describe the data, and middleware checks authentication. This separation keeps the code easier to read and maintain.</p>
+  <p class="cue"><strong>Remember:</strong> Route receives → middleware checks → controller works → model stores.</p>
+</section>
+
+<section class="question">
+  <span class="number">4</span><h2>How does authentication work?</h2>
+  <p class="answer">During registration, the password is hashed with bcrypt before it is stored. During login, the entered password is compared with the hash. If it matches, the server creates a JWT containing the user ID. Protected routes verify this token before allowing access.</p>
+  <p class="cue"><strong>Remember:</strong> Hash password → login → issue JWT → verify JWT.</p>
+</section>
+
+<section class="question">
+  <span class="number">5</span><h2>Why did you use a ledger instead of storing the balance directly?</h2>
+  <p class="answer">A stored balance can be changed accidentally and does not explain how it was created. My ledger keeps every credit and debit entry. The balance is calculated as total credits minus total debits, so every change has a history that can be checked.</p>
+  <p class="cue"><strong>Remember:</strong> Balance = Credits − Debits.</p>
+</section>
+
+<section class="question">
+  <span class="number">6</span><h2>Why are ledger entries immutable?</h2>
+  <p class="answer">Immutable means an entry cannot be edited or deleted after creation. This protects the financial history. If a mistake must be corrected, the safer approach is to create an opposite entry instead of changing the old record.</p>
+  <p class="cue"><strong>Remember:</strong> Never erase history; add a reversal.</p>
+</section>
+
+<section class="question">
+  <span class="number">7</span><h2>How does a money transfer work?</h2>
+  <p class="answer">The API first validates both accounts and checks the sender’s balance. It creates one transaction, adds a debit entry to the sender and a credit entry to the receiver, then marks the transaction completed. Both ledger entries belong to the same transfer.</p>
+  <p class="cue"><strong>Remember:</strong> Validate → debit sender → credit receiver → complete.</p>
+</section>
+
+<section class="question">
+  <span class="number">8</span><h2>Why did you use a MongoDB transaction?</h2>
+  <p class="answer">A transfer changes more than one document. A database transaction makes these changes all-or-nothing. If one step fails, MongoDB rolls everything back, which prevents money from disappearing or appearing in only one account.</p>
+  <p class="cue"><strong>Remember:</strong> Both changes succeed, or neither change happens.</p>
+</section>
+
+<section class="question">
+  <span class="number">9</span><h2>What is an idempotency key and why is it needed?</h2>
+  <p class="answer">It is a unique value sent with a transfer request. If the same request is sent again because of a retry or double-click, the server finds the existing transaction instead of creating another one. This helps prevent duplicate payments.</p>
+  <p class="cue"><strong>Remember:</strong> Same key = same transfer, not double payment.</p>
+</section>
+
+<section class="question">
+  <span class="number">10</span><h2>What was the main challenge and what did you learn?</h2>
+  <p class="answer">The main challenge was keeping balances correct during transfers. I solved it with immutable credit and debit entries, MongoDB transactions and idempotency keys. I learned that financial systems need consistency and traceability, not only basic CRUD APIs.</p>
+  <p class="cue"><strong>Remember:</strong> Correct balance, safe transfer, clear history.</p>
+</section>
+
+<section class="closing">
+  <h3>If you forget an answer</h3>
+  <p>Pause and return to the basic flow: “The request is validated, the user is authenticated, the database operation is performed, and a clear response is returned.” Speak slowly and explain only what you understand.</p>
+</section>
+</main>
+</body>
+</html>

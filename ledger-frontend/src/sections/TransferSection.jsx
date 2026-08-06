@@ -17,12 +17,12 @@ export default function TransferSection({
             <div className="transfer-layout">
                 <div className="card transfer-card">
                     <div className="card-header">
-                        <span className="card-title">🔄 Transfer Funds</span>
+                        <span className="card-title">Transfer funds</span>
                     </div>
                     <div className="card-body">
                         {accounts.length < 2 ? (
                             <div className="empty-state">
-                                <div className="empty-icon">🔄</div>
+                                <div className="empty-icon">{Icon.transfer}</div>
                                 <div className="empty-title">Need at least 2 accounts</div>
                                 <div className="empty-sub">Create more accounts to transfer between them.</div>
                                 <button className="btn btn-primary" onClick={onGoToAccounts}>
@@ -32,7 +32,7 @@ export default function TransferSection({
                         ) : (
                             <form onSubmit={onSubmit} className="transfer-form">
                                 <div className="form-group">
-                                    <label className="form-label" htmlFor="from-account">From Account</label>
+                                    <label className="form-label" htmlFor="from-account">From account</label>
                                     <select
                                         id="from-account"
                                         className="form-input form-select"
@@ -49,7 +49,7 @@ export default function TransferSection({
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label" htmlFor="to-account">To Account</label>
+                                    <label className="form-label" htmlFor="to-account">To account</label>
                                     <select
                                         id="to-account"
                                         className="form-input form-select"
@@ -91,7 +91,7 @@ export default function TransferSection({
                                 >
                                     {busyAction === "transfer"
                                         ? <><span className="spinner" /> Processing...</>
-                                        : <>{Icon.transfer} Transfer Now</>}
+                                        : <>{Icon.transfer} Transfer now</>}
                                 </button>
                             </form>
                         )}
@@ -100,14 +100,14 @@ export default function TransferSection({
 
                 <div className="transfer-info">
                     <div className="card">
-                        <div className="card-header"><span className="card-title">ℹ️ How Transfers Work</span></div>
+                        <div className="card-header"><span className="card-title">How transfers work</span></div>
                         <div className="card-body">
                             <div className="info-list">
                                 {[
-                                    { icon: "⚡", title: "Instant", desc: "Transfers complete instantly via MongoDB sessions" },
-                                    { icon: "🔑", title: "Idempotent", desc: "Each transfer has a unique key to prevent duplicates" },
-                                    { icon: "⚛️", title: "ACID", desc: "Atomic transactions ensure no partial updates" },
-                                    { icon: "📒", title: "Double-entry", desc: "DEBIT from source, CREDIT to destination" }
+                                    { icon: "01", title: "Immediate", desc: "Balances update as soon as a transfer completes" },
+                                    { icon: "02", title: "Duplicate-safe", desc: "A unique request key prevents repeated transfers" },
+                                    { icon: "03", title: "All or nothing", desc: "A failed transfer leaves both accounts unchanged" },
+                                    { icon: "04", title: "Ledger-backed", desc: "Every debit has a matching credit record" }
                                 ].map((item) => (
                                     <div key={item.title} className="info-item">
                                         <span className="info-icon">{item.icon}</span>

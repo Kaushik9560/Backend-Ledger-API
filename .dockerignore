@@ -1,0 +1,13 @@
+**/node_modules
+**/.env
+**/dist
+.git
+.gitignore
+*.log
+playwright-*.png
+/SpendWise_*.png
+/SpendWise_*.pdf
+/SpendWise_*.html
+/test-results
+/backend-ledger/test
+/backend-ledger/README.md

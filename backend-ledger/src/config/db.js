@@ -6,7 +6,11 @@ async function connectToDB(uri = process.env.MONGO_URI) {
         throw new Error("MONGO_URI is not set")
     }
 
-    await mongoose.connect(uri)
+    mongoose.set("strictQuery", true)
+
+    await mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 10000
+    })
     console.log("Server is connected to DB")
     return mongoose.connection
 }

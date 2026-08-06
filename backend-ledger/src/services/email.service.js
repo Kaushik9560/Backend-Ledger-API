@@ -4,7 +4,7 @@ let transporter;
 let hasLoggedDisabledState = false;
 
 function isEmailEnabled() {
-    return ![ "false", "0", "no" ].includes(String(process.env.EMAIL_ENABLED || "true").toLowerCase());
+    return [ "true", "1", "yes" ].includes(String(process.env.EMAIL_ENABLED || "false").toLowerCase());
 }
 
 function hasEmailCredentials() {

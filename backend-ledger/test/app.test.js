@@ -38,6 +38,8 @@ test.after(async () => {
 test("ledger backend smoke flow", async (t) => {
     let userToken
     let targetAccountId
+    let secondaryToken
+    let secondaryAccountId
 
     await t.test("GET / returns health response", async () => {
         const response = await request(app).get("/")
@@ -126,6 +128,162 @@ test("ledger backend smoke flow", async (t) => {
 
         assert.equal(balanceResponse.status, 200)
         assert.equal(balanceResponse.body.balance, 5000)
+    })
+
+    await t.test("prevents unauthorized and invalid transfers", async () => {
+        const registerResponse = await request(app)
+            .post("/api/auth/register")
+            .send({
+                name: "Secondary User",
+                email: "secondary@example.com",
+                password: "secret123"
+            })
+
+        secondaryToken = registerResponse.body.token
+
+        const accountResponse = await request(app)
+            .post("/api/accounts")
+            .set("Authorization", `Bearer ${secondaryToken}`)
+            .send()
+
+        secondaryAccountId = accountResponse.body.account._id
+
+        const unauthorizedResponse = await request(app)
+            .post("/api/transactions")
+            .set("Authorization", `Bearer ${secondaryToken}`)
+            .send({
+                fromAccount: targetAccountId,
+                toAccount: secondaryAccountId,
+                amount: 1,
+                idempotencyKey: "unauthorized-transfer"
+            })
+
+        assert.equal(unauthorizedResponse.status, 403)
+
+        const invalidAmountResponse = await request(app)
+            .post("/api/transactions")
+            .set("Authorization", `Bearer ${userToken}`)
+            .send({
+                fromAccount: targetAccountId,
+                toAccount: secondaryAccountId,
+                amount: -100,
+                idempotencyKey: "negative-transfer"
+            })
+
+        assert.equal(invalidAmountResponse.status, 400)
+    })
+
+    await t.test("completes transfers idempotently", async () => {
+        const payload = {
+            fromAccount: targetAccountId,
+            toAccount: secondaryAccountId,
+            amount: 100,
+            idempotencyKey: "primary-to-secondary"
+        }
+
+        const transferResponse = await request(app)
+            .post("/api/transactions")
+            .set("Authorization", `Bearer ${userToken}`)
+            .send(payload)
+
+        assert.equal(transferResponse.status, 201)
+        assert.equal(transferResponse.body.transaction.status, "COMPLETED")
+
+        const retryResponse = await request(app)
+            .post("/api/transactions")
+            .set("Authorization", `Bearer ${userToken}`)
+            .send(payload)
+
+        assert.equal(retryResponse.status, 200)
+        assert.equal(retryResponse.body.message, "Transaction already processed")
+
+        const changedRetryResponse = await request(app)
+            .post("/api/transactions")
+            .set("Authorization", `Bearer ${userToken}`)
+            .send({ ...payload, amount: 101 })
+
+        assert.equal(changedRetryResponse.status, 409)
+
+        const [primaryBalanceResponse, secondaryBalanceResponse] = await Promise.all([
+            request(app)
+                .get(`/api/accounts/balance/${targetAccountId}`)
+                .set("Authorization", `Bearer ${userToken}`),
+            request(app)
+                .get(`/api/accounts/balance/${secondaryAccountId}`)
+                .set("Authorization", `Bearer ${secondaryToken}`)
+        ])
+
+        assert.equal(primaryBalanceResponse.body.balance, 4900)
+        assert.equal(secondaryBalanceResponse.body.balance, 100)
+    })
+
+    await t.test("creates, lists, summarizes and reverses an expense", async () => {
+        const createResponse = await request(app)
+            .post("/api/expenses")
+            .set("Authorization", `Bearer ${userToken}`)
+            .send({
+                accountId: targetAccountId,
+                amount: 400,
+                type: "expense",
+                category: "Food & Dining",
+                description: "Test dinner"
+            })
+
+        assert.equal(createResponse.status, 201)
+
+        const [listResponse, summaryResponse, balanceAfterCreate] = await Promise.all([
+            request(app)
+                .get("/api/expenses?limit=500")
+                .set("Authorization", `Bearer ${userToken}`),
+            request(app)
+                .get("/api/expenses/summary")
+                .set("Authorization", `Bearer ${userToken}`),
+            request(app)
+                .get(`/api/accounts/balance/${targetAccountId}`)
+                .set("Authorization", `Bearer ${userToken}`)
+        ])
+
+        assert.equal(listResponse.status, 200)
+        assert.equal(listResponse.body.pagination.limit, 100)
+        assert.equal(listResponse.body.expenses.length, 1)
+        assert.equal(summaryResponse.body.summary.totalExpense, 400)
+        assert.equal(balanceAfterCreate.body.balance, 4500)
+
+        const deleteResponse = await request(app)
+            .delete(`/api/expenses/${createResponse.body.expense._id}`)
+            .set("Authorization", `Bearer ${userToken}`)
+
+        assert.equal(deleteResponse.status, 200)
+
+        const balanceAfterDelete = await request(app)
+            .get(`/api/accounts/balance/${targetAccountId}`)
+            .set("Authorization", `Bearer ${userToken}`)
+
+        assert.equal(balanceAfterDelete.body.balance, 4900)
+    })
+
+    await t.test("restores and clears a browser session with an HttpOnly cookie", async () => {
+        const browser = request.agent(app)
+        const loginResponse = await browser
+            .post("/api/auth/login")
+            .send({
+                email: "secondary@example.com",
+                password: "secret123"
+            })
+
+        assert.equal(loginResponse.status, 200)
+        assert.match(loginResponse.headers["set-cookie"][0], /HttpOnly/i)
+        assert.match(loginResponse.headers["set-cookie"][0], /SameSite=Lax/i)
+
+        const sessionResponse = await browser.get("/api/auth/session")
+        assert.equal(sessionResponse.status, 200)
+        assert.equal(sessionResponse.body.user.email, "secondary@example.com")
+
+        const logoutResponse = await browser.post("/api/auth/logout")
+        assert.equal(logoutResponse.status, 200)
+
+        const expiredSessionResponse = await browser.get("/api/auth/session")
+        assert.equal(expiredSessionResponse.status, 401)
     })
 
     await t.test("rejects stale tokens when the user record no longer exists", async () => {

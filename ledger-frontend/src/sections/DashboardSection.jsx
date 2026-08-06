@@ -23,7 +23,7 @@ export default function DashboardSection({
         <div className="page-enter">
             <div className="balance-hero">
                 <div className="balance-hero-inner">
-                    <div className="balance-label">Net Balance</div>
+                    <div className="balance-label">Net balance</div>
                     <div className={`balance-amount ${netBalance >= 0 ? "positive" : "negative"}`}>
                         {fmt(netBalance)}
                     </div>
@@ -53,23 +53,23 @@ export default function DashboardSection({
 
             <div className="stats-grid">
                 <div className="stat-card" style={{ "--accent": "var(--green)" }}>
-                    <div className="stat-icon">💰</div>
+                    <div className="stat-icon">{Icon.income}</div>
                     <div className="stat-info">
-                        <div className="stat-label">Total Income</div>
+                        <div className="stat-label">Total income</div>
                         <div className="stat-val">{fmt(totalIncome)}</div>
                         <div className="stat-sub">{incomeCount} entries</div>
                     </div>
                 </div>
                 <div className="stat-card" style={{ "--accent": "var(--red)" }}>
-                    <div className="stat-icon">💸</div>
+                    <div className="stat-icon">{Icon.expense}</div>
                     <div className="stat-info">
-                        <div className="stat-label">Total Expenses</div>
+                        <div className="stat-label">Total expenses</div>
                         <div className="stat-val">{fmt(totalExpense)}</div>
                         <div className="stat-sub">{expenseCount} entries</div>
                     </div>
                 </div>
-                <div className="stat-card" style={{ "--accent": "var(--violet)" }}>
-                    <div className="stat-icon">🏦</div>
+                <div className="stat-card" style={{ "--accent": "var(--blue)" }}>
+                    <div className="stat-icon">{Icon.accounts}</div>
                     <div className="stat-info">
                         <div className="stat-label">Accounts</div>
                         <div className="stat-val">{accounts.length}</div>
@@ -77,7 +77,7 @@ export default function DashboardSection({
                     </div>
                 </div>
                 <div className="stat-card" style={{ "--accent": "var(--amber)" }}>
-                    <div className="stat-icon">📋</div>
+                    <div className="stat-icon">{Icon.analytics}</div>
                     <div className="stat-info">
                         <div className="stat-label">Transactions</div>
                         <div className="stat-val">{expenses.length}</div>
@@ -89,23 +89,23 @@ export default function DashboardSection({
             <div className="two-col">
                 <div className="card">
                     <div className="card-header">
-                        <span className="card-title">Recent Transactions</span>
+                        <span className="card-title">Recent transactions</span>
                         <button className="btn btn-ghost btn-sm" onClick={() => onSetActiveTab("expenses")}>View all →</button>
                     </div>
                     <div className="card-body">
                         {expenses.length === 0 ? (
                             <div className="empty-state">
-                                <div className="empty-icon">📝</div>
+                                <div className="empty-icon">{Icon.expenses}</div>
                                 <div className="empty-title">No transactions yet</div>
                                 <div className="empty-sub">Add your first income or expense to get started.</div>
                                 <button className="btn btn-primary" onClick={onShowModal} id="dash-add-first-btn">
-                                    {Icon.plus} Add Transaction
+                                    {Icon.plus} Add transaction
                                 </button>
                             </div>
                         ) : (
                             <div className="tx-list">
                                 {expenses.slice(0, 6).map((expense) => {
-                                    const meta = CATEGORY_META[expense.category] || { icon: "📦", color: "var(--text-muted)" }
+                                    const meta = CATEGORY_META[expense.category] || { icon: "OT", color: "var(--text-2)" }
 
                                     return (
                                         <div key={expense._id} className="tx-item">
@@ -129,20 +129,20 @@ export default function DashboardSection({
 
                 <div className="card">
                     <div className="card-header">
-                        <span className="card-title">Top Spending</span>
+                        <span className="card-title">Top spending</span>
                         <button className="btn btn-ghost btn-sm" onClick={() => onSetActiveTab("analytics")}>Analytics →</button>
                     </div>
                     <div className="card-body">
                         {topExpenseCategories.length === 0 ? (
                             <div className="empty-state">
-                                <div className="empty-icon">📊</div>
+                                <div className="empty-icon">{Icon.analytics}</div>
                                 <div className="empty-title">No spending data</div>
                                 <div className="empty-sub">Add expenses to see your spending breakdown.</div>
                             </div>
                         ) : (
                             <div className="cat-bars">
                                 {topExpenseCategories.map(({ cat, total }) => {
-                                    const meta = CATEGORY_META[cat] || { icon: "📦", color: "var(--text-muted)" }
+                                    const meta = CATEGORY_META[cat] || { icon: "OT", color: "var(--text-2)" }
                                     const width = (total / maxCatTotal) * 100
 
                                     return (

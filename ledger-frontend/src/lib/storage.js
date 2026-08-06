@@ -1,5 +1,4 @@
 export const storageKeys = {
-    token: "spendwise-token",
     user: "spendwise-user",
     budgets: "spendwise-budgets"
 }
@@ -24,16 +23,12 @@ export function readStoredUser() {
     }
 }
 
-export function readStoredToken() {
-    return localStorage.getItem(storageKeys.token) || ""
-}
-
-export function persistStoredSession(user, token) {
+export function persistStoredSession(user) {
     localStorage.setItem(storageKeys.user, JSON.stringify(user))
-    localStorage.setItem(storageKeys.token, token)
+    localStorage.removeItem("spendwise-token")
 }
 
 export function clearStoredSession() {
     localStorage.removeItem(storageKeys.user)
-    localStorage.removeItem(storageKeys.token)
+    localStorage.removeItem("spendwise-token")
 }

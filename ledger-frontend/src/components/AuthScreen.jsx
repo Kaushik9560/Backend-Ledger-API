@@ -1,5 +1,5 @@
-import { AUTH_FEATURES, TECH_STACK } from "../constants"
 import { ledgerApi } from "../api"
+import BrandMark from "./BrandMark"
 
 export default function AuthScreen({
     mode,
@@ -11,121 +11,179 @@ export default function AuthScreen({
     health,
     onHealthCheck
 }) {
+    const isRegister = mode === "register"
+
     return (
         <div className="auth-page">
-            <div className="auth-left">
+            <section className="auth-left" aria-label="SpendWise product overview">
                 <div className="auth-brand">
-                    <div className="brand-logo">
-                        <span>💰</span>
+                    <div className="brand-header">
+                        <span className="brand-logo"><BrandMark /></span>
+                        <span className="brand-name">SpendWise</span>
                     </div>
-                    <h1 className="brand-name">SpendWise</h1>
-                    <p className="brand-tagline">Your personal finance tracker,<br />built on a production ledger engine.</p>
-                    <div className="brand-features">
-                        {AUTH_FEATURES.map((feature) => (
-                            <div className="brand-feature" key={feature.text}>
-                                <span className="bf-icon">{feature.icon}</span>
-                                <span>{feature.text}</span>
+
+                    <div className="brand-copy">
+                        <p className="brand-eyebrow">Personal finance, without the noise</p>
+                        <h1>A clearer view of your money.</h1>
+                        <p className="brand-tagline">
+                            Track income, spending, and account balances in one calm workspace.
+                        </p>
+                    </div>
+
+                    <div className="product-preview" aria-label="Example monthly overview">
+                        <div className="preview-header">
+                            <div>
+                                <p className="preview-kicker">Monthly overview</p>
+                                <p className="preview-period">August 2026</p>
                             </div>
-                        ))}
+                            <span className="preview-sample">Example data</span>
+                        </div>
+
+                        <div className="preview-balance">
+                            <span>Available balance</span>
+                            <strong>₹84,320</strong>
+                            <small>Across two accounts</small>
+                        </div>
+
+                        <div className="preview-metrics">
+                            <div>
+                                <span>Income</span>
+                                <strong className="metric-positive">₹1,20,000</strong>
+                            </div>
+                            <div>
+                                <span>Spent</span>
+                                <strong>₹35,680</strong>
+                            </div>
+                        </div>
+
+                        <div className="preview-plan">
+                            <div className="preview-plan-head">
+                                <span>Monthly spending</span>
+                                <strong>40% used</strong>
+                            </div>
+                            <div className="preview-progress"><span /></div>
+                            <div className="preview-categories">
+                                <span>Housing</span>
+                                <span>Food & dining</span>
+                                <span>Transport</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="brand-stack">
-                        {TECH_STACK.map((item) => (
-                            <span className="stack-chip" key={item}>{item}</span>
-                        ))}
+
+                    <div className="brand-proof" aria-label="Product capabilities">
+                        <span><b>✓</b> Ledger-based balances</span>
+                        <span><b>✓</b> Private account</span>
+                        <span><b>✓</b> CSV export</span>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div className="auth-right">
+            <main className="auth-right">
                 <div className="auth-card">
-                    <div className="auth-tabs">
-                        <button
-                            id="auth-login-tab"
-                            className={`auth-tab ${mode === "login" ? "active" : ""}`}
-                            onClick={() => setMode("login")}
-                            type="button"
-                        >
-                            Sign In
-                        </button>
-                        <button
-                            id="auth-register-tab"
-                            className={`auth-tab ${mode === "register" ? "active" : ""}`}
-                            onClick={() => setMode("register")}
-                            type="button"
-                        >
-                            Register
+                    <div className="auth-mobile-brand">
+                        <span className="brand-logo"><BrandMark /></span>
+                        <span className="brand-name">SpendWise</span>
+                    </div>
+
+                    <div className="auth-mode-row">
+                        <span>{isRegister ? "Already have an account?" : "New to SpendWise?"}</span>
+                        <button type="button" onClick={() => setMode(isRegister ? "login" : "register")}>
+                            {isRegister ? "Sign in" : "Create account"}
                         </button>
                     </div>
 
-                    <div className="auth-header">
-                        <p className="auth-title">{mode === "login" ? "Welcome back 👋" : "Create account"}</p>
-                        <p className="auth-sub">{mode === "login" ? "Sign in to your workspace" : "Join SpendWise today"}</p>
-                    </div>
+                    <header className="auth-header">
+                        <p className="auth-eyebrow">{isRegister ? "Get started" : "Welcome back"}</p>
+                        <h2 className="auth-title">
+                            {isRegister ? "Create your account" : "Sign in to SpendWise"}
+                        </h2>
+                        <p className="auth-sub">
+                            {isRegister
+                                ? "Set up your personal workspace in under a minute."
+                                : "Enter your details to continue to your dashboard."}
+                        </p>
+                    </header>
 
                     <form onSubmit={onSubmit} className="auth-form">
-                        {mode === "register" && (
+                        {isRegister && (
                             <div className="form-group">
-                                <label className="form-label" htmlFor="reg-name">Full Name</label>
+                                <label className="form-label" htmlFor="reg-name">Full name</label>
                                 <input
                                     id="reg-name"
                                     className="form-input"
                                     type="text"
-                                    placeholder="Kaushik Sharma"
+                                    placeholder="Your name"
                                     value={authForm.name}
                                     onChange={(event) => setAuthForm((form) => ({ ...form, name: event.target.value }))}
                                     autoComplete="name"
+                                    maxLength={100}
+                                    required
                                 />
                             </div>
                         )}
                         <div className="form-group">
-                            <label className="form-label" htmlFor="auth-email">Email Address</label>
+                            <label className="form-label" htmlFor="auth-email">Email address</label>
                             <input
                                 id="auth-email"
                                 className="form-input"
                                 type="email"
-                                placeholder="you@example.com"
+                                placeholder="name@example.com"
                                 value={authForm.email}
                                 onChange={(event) => setAuthForm((form) => ({ ...form, email: event.target.value }))}
                                 autoComplete="email"
+                                maxLength={254}
+                                required
                             />
                         </div>
-                        <div className="form-group" style={{ marginBottom: "1.5rem" }}>
-                            <label className="form-label" htmlFor="auth-password">Password</label>
+                        <div className="form-group auth-password-group">
+                            <div className="auth-label-row">
+                                <label className="form-label" htmlFor="auth-password">Password</label>
+                                {isRegister && <span>6 characters minimum</span>}
+                            </div>
                             <input
                                 id="auth-password"
                                 className="form-input"
                                 type="password"
-                                placeholder="••••••••"
+                                placeholder="Enter your password"
                                 value={authForm.password}
                                 onChange={(event) => setAuthForm((form) => ({ ...form, password: event.target.value }))}
-                                autoComplete={mode === "register" ? "new-password" : "current-password"}
+                                autoComplete={isRegister ? "new-password" : "current-password"}
+                                minLength={6}
+                                maxLength={128}
+                                required
                             />
                         </div>
                         <button
                             id="auth-submit-btn"
-                            className="btn btn-primary btn-full btn-lg"
+                            className="btn btn-primary btn-full btn-lg auth-submit"
                             type="submit"
                             disabled={busyAction === "register" || busyAction === "login"}
                         >
                             {busyAction === mode
-                                ? <><span className="spinner" /> {mode === "register" ? "Creating..." : "Signing in..."}</>
-                                : mode === "register" ? "Create Account" : "Sign In"}
+                                ? <><span className="spinner" /> {isRegister ? "Creating account..." : "Signing in..."}</>
+                                : isRegister ? "Create account" : "Sign in"}
                         </button>
                     </form>
 
-                    <div className="auth-switch-row">
-                        {mode === "login"
-                            ? <>Don't have an account? <button onClick={() => setMode("register")}>Register</button></>
-                            : <>Already have an account? <button onClick={() => setMode("login")}>Sign in</button></>}
-                    </div>
+                    <p className="auth-privacy-note">
+                        Your session is protected with a secure, HttpOnly cookie.
+                    </p>
 
-                    <div className="api-status-row" onClick={() => void onHealthCheck()} id="health-check-btn">
+                    <button
+                        className="api-status-row"
+                        onClick={() => void onHealthCheck()}
+                        id="health-check-btn"
+                        type="button"
+                        aria-label="Check service status"
+                    >
                         <span className={`status-dot dot-${health}`} />
-                        <span>{health === "online" ? "API Online" : health === "offline" ? "API Offline" : "Connecting..."}</span>
+                        <span aria-live="polite">
+                            {health === "online" ? "Service available" : health === "offline" ? "Service unavailable" : "Checking service"}
+                        </span>
                         <span className="api-url">{ledgerApi.baseUrl}</span>
-                    </div>
+                    </button>
                 </div>
-            </div>
+            </main>
         </div>
     )
 }

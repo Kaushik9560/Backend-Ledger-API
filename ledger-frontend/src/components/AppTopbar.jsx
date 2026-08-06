@@ -9,7 +9,7 @@ export default function AppTopbar({ activeTab, user, onShowModal }) {
                 <p className="page-subtitle">{getPageSubtitle(activeTab, user)}</p>
             </div>
             <button id="topbar-add-btn" className="btn btn-primary" onClick={onShowModal}>
-                {Icon.plus} Add Transaction
+                {Icon.plus} Add transaction
             </button>
         </div>
     )

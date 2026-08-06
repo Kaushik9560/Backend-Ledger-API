@@ -23,19 +23,19 @@ export default function AnalyticsSection({
             <div className="analytics-summary">
                 <div className="analytics-card income-card">
                     <div className="ac-icon">{Icon.income}</div>
-                    <div className="ac-label">Total Income</div>
+                    <div className="ac-label">Total income</div>
                     <div className="ac-val">{fmt(totalIncome)}</div>
                     <div className="ac-sub">{incomeCount} transactions</div>
                 </div>
                 <div className="analytics-card expense-card">
                     <div className="ac-icon">{Icon.expense}</div>
-                    <div className="ac-label">Total Expenses</div>
+                    <div className="ac-label">Total expenses</div>
                     <div className="ac-val">{fmt(totalExpenseValue)}</div>
                     <div className="ac-sub">{expenseCount} transactions</div>
                 </div>
                 <div className={`analytics-card net-card ${netBalance >= 0 ? "positive" : "negative"}`}>
                     <div className="ac-icon">{Icon.wallet}</div>
-                    <div className="ac-label">Net Savings</div>
+                    <div className="ac-label">Net savings</div>
                     <div className="ac-val">{fmt(netBalance)}</div>
                     <div className="ac-sub">{savingsRate}</div>
                 </div>
@@ -44,12 +44,12 @@ export default function AnalyticsSection({
             <div className="two-col">
                 <div className="card">
                     <div className="card-header">
-                        <span className="card-title">📅 Monthly Trend</span>
+                        <span className="card-title">Monthly trend</span>
                     </div>
                     <div className="card-body">
                         {monthlyData.length === 0 ? (
                             <div className="empty-state">
-                                <div className="empty-icon">📊</div>
+                                <div className="empty-icon">{Icon.analytics}</div>
                                 <div className="empty-title">No data yet</div>
                                 <div className="empty-sub">Add transactions to see your monthly trend.</div>
                             </div>
@@ -83,19 +83,19 @@ export default function AnalyticsSection({
 
                 <div className="card">
                     <div className="card-header">
-                        <span className="card-title">🏷️ Spending by Category</span>
+                        <span className="card-title">Spending by category</span>
                     </div>
                     <div className="card-body">
                         {topExpenseCategories.length === 0 ? (
                             <div className="empty-state">
-                                <div className="empty-icon">🏷️</div>
+                                <div className="empty-icon">{Icon.expenses}</div>
                                 <div className="empty-title">No spending data</div>
                                 <div className="empty-sub">Add expenses to see category breakdown.</div>
                             </div>
                         ) : (
                             <div className="cat-breakdown">
                                 {topExpenseCategories.map(({ cat, total }) => {
-                                    const meta = CATEGORY_META[cat] || { icon: "📦", color: "var(--text-muted)" }
+                                    const meta = CATEGORY_META[cat] || { icon: "OT", color: "var(--text-2)" }
                                     const percent = totalExpense > 0 ? Math.round((total / totalExpense) * 100) : 0
 
                                     return (

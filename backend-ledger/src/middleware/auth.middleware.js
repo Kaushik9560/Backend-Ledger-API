@@ -3,7 +3,13 @@ const jwt = require("jsonwebtoken")
 const tokenBlackListModel = require("../models/blackList.model")
 
 function getTokenFromRequest(req) {
-    return req.cookies.token || req.headers.authorization?.split(" ")[1]
+    const authorization = req.headers.authorization
+    const bearerToken = typeof authorization === "string" && authorization.startsWith("Bearer ")
+        ? authorization.slice(7).trim()
+        : ""
+    const token = req.cookies.token || bearerToken
+
+    return typeof token === "string" && token.length <= 4096 ? token : ""
 }
 
 async function authMiddleware(req, res, next) {

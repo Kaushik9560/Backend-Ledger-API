@@ -98,12 +98,15 @@ PORT=3000
 MONGO_URI=mongodb://127.0.0.1:27017/backend-ledger
 JWT_SECRET=replace-with-a-long-random-secret
 CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173
+COOKIE_SAME_SITE=lax
+AUTH_RETURN_TOKEN=false
 EMAIL_ENABLED=false
 EMAIL_USER=
 CLIENT_ID=
 CLIENT_SECRET=
 REFRESH_TOKEN=
-TRANSACTION_PROCESSING_DELAY_MS=15000
+API_RATE_LIMIT_MAX=300
+AUTH_RATE_LIMIT_MAX=20
 ```
 
 Frontend optional `.env`:
@@ -142,13 +145,16 @@ npm start
 
 Open `http://localhost:3000`.
 
+For the complete MongoDB Atlas + Render deployment walkthrough, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
 ## API Summary
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Service health check |
 | `POST` | `/api/auth/register` | Register a user |
-| `POST` | `/api/auth/login` | Login and receive JWT |
+| `POST` | `/api/auth/login` | Login and create an authenticated session |
+| `GET` | `/api/auth/session` | Restore the HttpOnly-cookie browser session |
 | `POST` | `/api/auth/logout` | Logout and blacklist the token |
 | `POST` | `/api/accounts` | Create an account for the logged-in user |
 | `GET` | `/api/accounts` | List user accounts |

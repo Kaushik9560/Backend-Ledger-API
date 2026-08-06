@@ -8,7 +8,6 @@ import {
     clearStoredSession,
     persistStoredSession,
     readBudgets,
-    readStoredToken,
     readStoredUser,
     saveBudgets
 } from "./lib/storage"
@@ -38,7 +37,6 @@ export default function App() {
     const [mode, setMode] = useState("login")
     const [authForm, setAuthForm] = useState({ name: "", email: "", password: "" })
     const [user, setUser] = useState(() => readStoredUser())
-    const [token, setToken] = useState(() => readStoredToken())
 
     const [accounts, setAccounts] = useState([])
     const [balances, setBalances] = useState({})
@@ -82,16 +80,14 @@ export default function App() {
         setToasts((currentToasts) => currentToasts.filter((toastItem) => toastItem.id !== id))
     }
 
-    function persistSession(nextUser, nextToken) {
-        persistStoredSession(nextUser, nextToken)
+    function persistSession(nextUser) {
+        persistStoredSession(nextUser)
         setUser(nextUser)
-        setToken(nextToken)
     }
 
     function clearSession() {
         clearStoredSession()
         setUser(null)
-        setToken("")
         setAccounts([])
         setBalances({})
         setExpenses([])
@@ -109,20 +105,16 @@ export default function App() {
         }
     }
 
-    const loadAccounts = useCallback(async (activeToken = token) => {
-        if (!activeToken) {
-            return
-        }
-
+    const loadAccounts = useCallback(async () => {
         try {
-            const response = await ledgerApi.listAccounts(activeToken)
+            const response = await ledgerApi.listAccounts()
             setAccounts(response.accounts)
 
             const balanceMap = {}
 
             await Promise.all(response.accounts.map(async (account) => {
                 try {
-                    const balanceResponse = await ledgerApi.getBalance(activeToken, account._id)
+                    const balanceResponse = await ledgerApi.getBalance(account._id)
                     balanceMap[account._id] = balanceResponse.balance
                 } catch {
                     balanceMap[account._id] = 0
@@ -133,16 +125,16 @@ export default function App() {
         } catch {
             // Keep the current UI state if the refresh fails.
         }
-    }, [token])
+    }, [])
 
     async function handleRefreshAccounts() {
-        if (!token) {
+        if (!user) {
             return
         }
 
         setBusyAction("refreshAccounts")
         try {
-            await loadAccounts(token)
+            await loadAccounts()
             toast("success", "Accounts refreshed")
         } catch {
             toast("error", "Unable to refresh accounts right now")
@@ -152,13 +144,13 @@ export default function App() {
     }
 
     async function handleCreateAccount() {
-        if (!token) {
+        if (!user) {
             return
         }
 
         setBusyAction("createAccount")
         try {
-            const response = await ledgerApi.createAccount(token)
+            const response = await ledgerApi.createAccount()
             setAccounts((currentAccounts) => [response.account, ...currentAccounts])
             setBalances((currentBalances) => ({ ...currentBalances, [response.account._id]: 0 }))
             toast("success", "New account created!")
@@ -169,36 +161,28 @@ export default function App() {
         }
     }
 
-    const loadExpenses = useCallback(async (activeToken = token) => {
-        if (!activeToken) {
-            return
-        }
-
+    const loadExpenses = useCallback(async () => {
         try {
-            const response = await ledgerApi.listExpenses(activeToken, { limit: 100 })
+            const response = await ledgerApi.listExpenses({ limit: 100 })
             startTransition(() => setExpenses(response.expenses))
         } catch {
             // Keep the current UI state if the refresh fails.
         }
-    }, [token])
+    }, [])
 
-    const loadSummary = useCallback(async (activeToken = token) => {
-        if (!activeToken) {
-            return
-        }
-
+    const loadSummary = useCallback(async () => {
         try {
-            const response = await ledgerApi.getExpenseSummary(activeToken)
+            const response = await ledgerApi.getExpenseSummary()
             startTransition(() => setSummary(response))
         } catch {
             // Keep the current UI state if the refresh fails.
         }
-    }, [token])
+    }, [])
 
     async function handleAddExpense(form) {
         setBusyAction("addExpense")
         try {
-            await ledgerApi.createExpense(token, {
+            await ledgerApi.createExpense({
                 accountId: form.accountId,
                 amount: Number.parseFloat(form.amount),
                 type: form.type,
@@ -223,7 +207,7 @@ export default function App() {
         }
 
         try {
-            await ledgerApi.deleteExpense(token, id)
+            await ledgerApi.deleteExpense(id)
             toast("success", "Entry deleted and balance reversed.")
             await Promise.all([loadExpenses(), loadSummary(), loadAccounts()])
         } catch (error) {
@@ -264,7 +248,7 @@ export default function App() {
             date.setDate(date.getDate() - seed.daysAgo)
 
             try {
-                await ledgerApi.createExpense(token, {
+                await ledgerApi.createExpense({
                     accountId: activeAccount._id,
                     amount: seed.amount,
                     type: seed.type,
@@ -352,13 +336,13 @@ export default function App() {
                 ? await ledgerApi.register({ name: name.trim(), email: email.trim().toLowerCase(), password })
                 : await ledgerApi.login({ email: email.trim().toLowerCase(), password })
 
-            persistSession(response.user, response.token)
+            persistSession(response.user)
             setAuthForm({ name: "", email: "", password: "" })
             toast("success", `Welcome, ${response.user.name}!`)
             await Promise.all([
-                loadAccounts(response.token),
-                loadExpenses(response.token),
-                loadSummary(response.token)
+                loadAccounts(),
+                loadExpenses(),
+                loadSummary()
             ])
             setActiveTab("dashboard")
         } catch (error) {
@@ -372,9 +356,7 @@ export default function App() {
         setBusyAction("logout")
 
         try {
-            if (token) {
-                await ledgerApi.logout(token)
-            }
+            await ledgerApi.logout()
         } catch {
             // Logging out locally is enough if the request fails.
         }
@@ -407,7 +389,7 @@ export default function App() {
         setBusyAction("transfer")
 
         try {
-            await ledgerApi.transfer(token, {
+            await ledgerApi.transfer({
                 fromAccount,
                 toAccount,
                 amount: parsedAmount,
@@ -428,8 +410,21 @@ export default function App() {
     }, [])
 
     useEffect(() => {
+        async function restoreSession() {
+            try {
+                const response = await ledgerApi.session()
+                persistSession(response.user)
+            } catch {
+                clearSession()
+            }
+        }
+
+        void restoreSession()
+    }, [])
+
+    useEffect(() => {
         function handleUnauthorized(event) {
-            if (!readStoredToken()) {
+            if (!readStoredUser()) {
                 return
             }
 
@@ -446,12 +441,12 @@ export default function App() {
     }, [])
 
     useEffect(() => {
-        if (token && user) {
-            void loadAccounts(token)
-            void loadExpenses(token)
-            void loadSummary(token)
+        if (user) {
+            void loadAccounts()
+            void loadExpenses()
+            void loadSummary()
         }
-    }, [token, user, loadAccounts, loadExpenses, loadSummary])
+    }, [user, loadAccounts, loadExpenses, loadSummary])
 
     if (!user) {
         return (
@@ -490,7 +485,6 @@ export default function App() {
                 health={health}
                 busyAction={busyAction}
                 onSetActiveTab={setActiveTab}
-                onShowModal={() => setShowModal(true)}
                 onHealthCheck={runHealthCheck}
                 onLogout={handleLogout}
             />
@@ -537,7 +531,6 @@ export default function App() {
                         <AccountsSection
                             accounts={accounts}
                             balances={balances}
-                            token={token}
                             busyAction={busyAction}
                             onRefreshAccounts={handleRefreshAccounts}
                             onCreateAccount={handleCreateAccount}

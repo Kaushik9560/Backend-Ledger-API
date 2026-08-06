@@ -22,7 +22,7 @@ export default function ExpensesSection({
                             className={`filter-tab ${expenseFilter === filter ? "active" : ""}`}
                             onClick={() => onSetExpenseFilter(filter)}
                         >
-                            {filter === "all" ? "All" : filter === "expense" ? "💸 Expenses" : "💰 Income"}
+                            {filter === "all" ? "All" : filter === "expense" ? "Expenses" : "Income"}
                         </button>
                     ))}
                 </div>
@@ -34,7 +34,7 @@ export default function ExpensesSection({
             {filteredExpenses.length === 0 ? (
                 <div className="card">
                     <div className="empty-state" style={{ padding: "4rem" }}>
-                        <div className="empty-icon">💳</div>
+                        <div className="empty-icon">{Icon.expenses}</div>
                         <div className="empty-title">No transactions found</div>
                         <div className="empty-sub">
                             {expenseFilter === "all"
@@ -42,7 +42,7 @@ export default function ExpensesSection({
                                 : `No ${expenseFilter} entries yet.`}
                         </div>
                         <button className="btn btn-primary" onClick={onShowModal} id="expenses-add-btn">
-                            {Icon.plus} Add Transaction
+                            {Icon.plus} Add transaction
                         </button>
                     </div>
                 </div>
@@ -50,7 +50,7 @@ export default function ExpensesSection({
                 <div className="card">
                     <div className="tx-list tx-list-full">
                         {filteredExpenses.map((expense) => {
-                            const meta = CATEGORY_META[expense.category] || { icon: "📦", color: "var(--text-muted)" }
+                            const meta = CATEGORY_META[expense.category] || { icon: "OT", color: "var(--text-2)" }
 
                             return (
                                 <div key={expense._id} className="tx-item tx-item-full" id={`tx-${expense._id}`}>
