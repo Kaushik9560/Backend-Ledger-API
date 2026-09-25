@@ -4,7 +4,7 @@ SpendWise is a full-stack personal finance tracker built with a Node.js/Express 
 
 This repository contains both parts of the project:
 
-- `backend-ledger/` - Express, MongoDB, JWT auth, ledger logic, automated tests
+- `backend-ledger/` - Express, MongoDB, JWT auth, ledger logic
 - `ledger-frontend/` - React, JavaScript, Vite single-page application
 
 ## Why This Project Stands Out
@@ -13,7 +13,7 @@ This repository contains both parts of the project:
 - Idempotent transfer endpoint to reduce duplicate transaction risk
 - Expense tracking, category analytics, budgets, CSV export, and demo data seeding
 - JWT-based auth flow with protected routes
-- In-memory MongoDB replica set support for fast demos and repeatable tests
+- In-memory MongoDB replica set support for fast local demos
 
 ## Tech Stack
 
@@ -22,7 +22,6 @@ This repository contains both parts of the project:
 | Backend | Node.js, Express, MongoDB, Mongoose |
 | Frontend | React 19, JavaScript, Vite |
 | Auth | JWT, HTTP cookies |
-| Testing | `node:test`, Supertest, `mongodb-memory-server` |
 
 ## Repository Structure
 
@@ -36,7 +35,6 @@ BackEnd/
 |   |   |-- models/
 |   |   `-- routes/
 |   |-- scripts/
-|   |-- test/
 |   |-- server.js
 |   `-- README.md
 |-- ledger-frontend/
@@ -113,14 +111,7 @@ Frontend optional `.env`:
 VITE_API_BASE_URL=http://localhost:3000
 ```
 
-## Quality Checks
-
-Backend tests:
-
-```powershell
-cd backend-ledger
-npm test
-```
+## Build Check
 
 Frontend production build:
 
@@ -151,6 +142,5 @@ npm run build
 
 ## Notes For Reviewers
 
-- The backend test suite uses an in-memory MongoDB replica set, so it runs without external database setup.
 - Transfer flows rely on MongoDB transactions; use `npm run dev:memory` or a replica-set-enabled MongoDB deployment when evaluating them manually.
 - Budgets are currently stored in frontend local storage, while ledger entries, accounts, expenses, and auth live in the backend.

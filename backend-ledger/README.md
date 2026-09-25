@@ -16,7 +16,6 @@ This service powers the SpendWise app with JWT auth, account creation, ledger-ba
 | `npm run dev:memory` | Starts the API with an in-memory MongoDB replica set |
 | `npm run dev:full` | Starts `dev:memory` and the frontend dev server together |
 | `npm start` | Starts the API without nodemon |
-| `npm test` | Runs the backend smoke tests |
 | `npm run frontend:dev` | Starts the frontend from this folder |
 | `npm run frontend:build` | Builds the frontend from this folder |
 | `npm run build` | Builds the frontend |
@@ -54,7 +53,6 @@ Why this mode is recommended:
 
 - no local MongoDB installation is required
 - transfer endpoints work out of the box because Mongo transactions need replica set support
-- it matches the automated test setup closely
 
 Health endpoints:
 
@@ -69,19 +67,6 @@ npm run dev
 
 Use a replica set enabled MongoDB deployment if you want to exercise transfer flows, because the transfer controller uses MongoDB transactions.
 
-## Test The Backend
-
-```powershell
-npm test
-```
-
-The test suite covers:
-
-- service boot health check
-- register and login flow
-- account creation and account listing
-- initial account funding through the system transaction endpoint
-- balance computation from ledger entries
 
 ## API Overview
 
