@@ -1,4 +1,4 @@
-import { fmt } from "../lib/formatters"
+import { formatCurrency } from "../lib/formatters"
 import { Icon } from "../icons"
 
 export default function TransferSection({
@@ -43,7 +43,7 @@ export default function TransferSection({
                                         <option value="">Select source account...</option>
                                         {activeAccounts.map((account) => (
                                             <option key={account._id} value={account._id}>
-                                                {account.currency} · ...{account._id.slice(-8)} — {balances[account._id] !== undefined ? fmt(balances[account._id]) : "?"}
+                                                {account.currency} · ...{account._id.slice(-8)} — {balances[account._id] !== undefined ? formatCurrency(balances[account._id]) : "?"}
                                             </option>
                                         ))}
                                     </select>

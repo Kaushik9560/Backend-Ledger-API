@@ -1,5 +1,5 @@
 import { CATEGORY_META } from "../constants"
-import { fmt } from "../lib/formatters"
+import { formatCurrency } from "../lib/formatters"
 import { Icon } from "../icons"
 
 export default function BudgetSection({
@@ -90,12 +90,12 @@ export default function BudgetSection({
 
                                 <div className="budget-amounts">
                                     <div>
-                                        <div className="budget-spent">{fmt(spent)}</div>
+                                        <div className="budget-spent">{formatCurrency(spent)}</div>
                                         <div className="budget-spent-label">spent</div>
                                     </div>
                                     {budget ? (
                                         <div style={{ textAlign: "right" }}>
-                                            <div className={`budget-limit ${isOverBudget ? "over" : ""}`}>{fmt(budget.limit)}</div>
+                                            <div className={`budget-limit ${isOverBudget ? "over" : ""}`}>{formatCurrency(budget.limit)}</div>
                                             <div className="budget-spent-label">limit</div>
                                         </div>
                                     ) : (
@@ -115,8 +115,8 @@ export default function BudgetSection({
                                 {budget && (
                                     <div className={`budget-status ${isOverBudget ? "over" : "ok"}`}>
                                         {isOverBudget
-                                            ? `₹ Over by ${fmt(spent - budget.limit)}`
-                                            : `₹ ${fmt(budget.limit - spent)} remaining`}
+                                            ? `₹ Over by ${formatCurrency(spent - budget.limit)}`
+                                            : `₹ ${formatCurrency(budget.limit - spent)} remaining`}
                                     </div>
                                 )}
                             </div>

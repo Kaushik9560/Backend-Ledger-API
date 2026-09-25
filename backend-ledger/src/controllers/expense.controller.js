@@ -25,10 +25,6 @@ function parseOptionalDate(value) {
     return Number.isNaN(parsed.getTime()) ? undefined : parsed
 }
 
-/**
- * POST /api/expenses
- * Create a new income or expense entry atomically with its ledger entry.
- */
 async function createExpense(req, res) {
     const { accountId, amount, type, category, description, date, tags } = req.body || {}
 
@@ -64,7 +60,6 @@ async function createExpense(req, res) {
         return res.status(400).json({ message: "Tags must contain at most 20 short text values" })
     }
 
-    // Verify account belongs to user
     const account = await accountModel.findOne({ _id: accountId, user: req.user._id })
     if (!account) {
         return res.status(404).json({ message: "Account not found" })
@@ -77,6 +72,8 @@ async function createExpense(req, res) {
     const session = await mongoose.startSession()
     try {
         session.startTransaction()
+
+        // This write makes concurrent expenses from the same account conflict safely.
         await accountModel.updateOne(
             { _id: account._id, user: req.user._id, status: "ACTIVE" },
             { $set: { lastTransactionAt: new Date() } },
@@ -95,7 +92,6 @@ async function createExpense(req, res) {
 
         const idempotencyKey = `exp_${randomUUID()}`
 
-        // Create the transaction record
         const [transaction] = await transactionModel.create([{
             fromAccount: accountId,
             toAccount: accountId,
@@ -104,7 +100,7 @@ async function createExpense(req, res) {
             status: "COMPLETED"
         }], { session })
 
-        // Create the ledger entry (CREDIT for income, DEBIT for expense)
+        // Income adds CREDIT; expense adds DEBIT.
         await ledgerModel.create([{
             account: accountId,
             amount: parsedAmount,
@@ -112,7 +108,6 @@ async function createExpense(req, res) {
             type: type === "income" ? "CREDIT" : "DEBIT"
         }], { session })
 
-        // Create the expense record
         const [expense] = await expenseModel.create([{
             user: req.user._id,
             account: accountId,
@@ -141,10 +136,6 @@ async function createExpense(req, res) {
     }
 }
 
-/**
- * GET /api/expenses
- * List expenses with optional filters
- */
 async function getExpenses(req, res) {
     const { category, type, from, to, accountId, limit = 50, page = 1 } = req.query
 
@@ -199,10 +190,6 @@ async function getExpenses(req, res) {
     })
 }
 
-/**
- * GET /api/expenses/summary
- * Get aggregated analytics
- */
 async function getExpenseSummary(req, res) {
     const { from, to, accountId } = req.query
 
@@ -286,10 +273,6 @@ async function getExpenseSummary(req, res) {
     })
 }
 
-/**
- * DELETE /api/expenses/:id
- * Soft delete and reverse the ledger effect in one transaction.
- */
 async function deleteExpense(req, res) {
     const { id } = req.params
 
@@ -319,7 +302,6 @@ async function deleteExpense(req, res) {
             { session }
         )
 
-        // Create a reversal transaction
         const [transaction] = await transactionModel.create([{
             fromAccount: expense.account,
             toAccount: expense.account,
@@ -328,7 +310,7 @@ async function deleteExpense(req, res) {
             status: "COMPLETED"
         }], { session })
 
-        // Reverse the ledger entry (flip CREDIT↔DEBIT)
+        // Reverse the original financial effect by flipping CREDIT and DEBIT.
         await ledgerModel.create([{
             account: expense.account,
             amount: expense.amount,
@@ -336,7 +318,6 @@ async function deleteExpense(req, res) {
             type: expense.type === "income" ? "DEBIT" : "CREDIT"
         }], { session })
 
-        // Soft delete the expense
         expense.isDeleted = true
         await expense.save({ session })
         await session.commitTransaction()
@@ -353,10 +334,6 @@ async function deleteExpense(req, res) {
     }
 }
 
-/**
- * GET /api/expenses/categories
- * Return available categories
- */
 function getCategories(req, res) {
     return res.status(200).json({ categories: CATEGORIES })
 }

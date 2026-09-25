@@ -9,6 +9,8 @@ const app = require("../src/app")
 const connectToDB = require("../src/config/db")
 const accountModel = require("../src/models/account.model")
 const userModel = require("../src/models/user.model")
+const ledgerModel = require("../src/models/ledger.model")
+const transactionModel = require("../src/models/transaction.model")
 
 let replSet
 
@@ -46,6 +48,13 @@ test("ledger backend smoke flow", async (t) => {
 
         assert.equal(response.status, 200)
         assert.equal(response.text, "Ledger Service is up and running")
+    })
+
+    await t.test("rejects requests without authentication", async () => {
+        const response = await request(app).get("/api/accounts")
+
+        assert.equal(response.status, 401)
+        assert.equal(response.body.message, "Unauthorized access, token is missing")
     })
 
     await t.test("registers and logs in a user", async () => {
@@ -173,6 +182,65 @@ test("ledger backend smoke flow", async (t) => {
         assert.equal(invalidAmountResponse.status, 400)
     })
 
+    await t.test("rejects transfers with insufficient balance", async () => {
+        const response = await request(app)
+            .post("/api/transactions")
+            .set("Authorization", `Bearer ${userToken}`)
+            .send({
+                fromAccount: targetAccountId,
+                toAccount: secondaryAccountId,
+                amount: 6000,
+                idempotencyKey: "insufficient-balance-transfer"
+            })
+
+        assert.equal(response.status, 400)
+
+        const balanceResponse = await request(app)
+            .get(`/api/accounts/balance/${targetAccountId}`)
+            .set("Authorization", `Bearer ${userToken}`)
+
+        assert.equal(balanceResponse.body.balance, 5000)
+    })
+
+    await t.test("rolls back every database write when a transfer fails", async () => {
+        const originalCreateLedgerEntries = ledgerModel.create
+
+        ledgerModel.create = async () => {
+            throw new Error("Forced ledger failure")
+        }
+
+        let response
+        try {
+            response = await request(app)
+                .post("/api/transactions")
+                .set("Authorization", `Bearer ${userToken}`)
+                .send({
+                    fromAccount: targetAccountId,
+                    toAccount: secondaryAccountId,
+                    amount: 50,
+                    idempotencyKey: "forced-rollback-transfer"
+                })
+        } finally {
+            ledgerModel.create = originalCreateLedgerEntries
+        }
+
+        assert.equal(response.status, 503)
+
+        const [savedTransaction, sourceBalance, destinationBalance] = await Promise.all([
+            transactionModel.findOne({ idempotencyKey: "forced-rollback-transfer" }),
+            request(app)
+                .get(`/api/accounts/balance/${targetAccountId}`)
+                .set("Authorization", `Bearer ${userToken}`),
+            request(app)
+                .get(`/api/accounts/balance/${secondaryAccountId}`)
+                .set("Authorization", `Bearer ${secondaryToken}`)
+        ])
+
+        assert.equal(savedTransaction, null)
+        assert.equal(sourceBalance.body.balance, 5000)
+        assert.equal(destinationBalance.body.balance, 0)
+    })
+
     await t.test("completes transfers idempotently", async () => {
         const payload = {
             fromAccount: targetAccountId,
@@ -217,8 +285,21 @@ test("ledger backend smoke flow", async (t) => {
         assert.equal(secondaryBalanceResponse.body.balance, 100)
     })
 
-    await t.test("creates, lists, summarizes and reverses an expense", async () => {
-        const createResponse = await request(app)
+    await t.test("creates, lists, summarizes and reverses income and expenses", async () => {
+        const incomeResponse = await request(app)
+            .post("/api/expenses")
+            .set("Authorization", `Bearer ${userToken}`)
+            .send({
+                accountId: targetAccountId,
+                amount: 1000,
+                type: "income",
+                category: "Salary & Income",
+                description: "Test salary"
+            })
+
+        assert.equal(incomeResponse.status, 201)
+
+        const expenseResponse = await request(app)
             .post("/api/expenses")
             .set("Authorization", `Bearer ${userToken}`)
             .send({
@@ -229,7 +310,7 @@ test("ledger backend smoke flow", async (t) => {
                 description: "Test dinner"
             })
 
-        assert.equal(createResponse.status, 201)
+        assert.equal(expenseResponse.status, 201)
 
         const [listResponse, summaryResponse, balanceAfterCreate] = await Promise.all([
             request(app)
@@ -245,12 +326,14 @@ test("ledger backend smoke flow", async (t) => {
 
         assert.equal(listResponse.status, 200)
         assert.equal(listResponse.body.pagination.limit, 100)
-        assert.equal(listResponse.body.expenses.length, 1)
+        assert.equal(listResponse.body.expenses.length, 2)
+        assert.equal(summaryResponse.body.summary.totalIncome, 1000)
         assert.equal(summaryResponse.body.summary.totalExpense, 400)
-        assert.equal(balanceAfterCreate.body.balance, 4500)
+        assert.equal(summaryResponse.body.summary.netBalance, 600)
+        assert.equal(balanceAfterCreate.body.balance, 5500)
 
         const deleteResponse = await request(app)
-            .delete(`/api/expenses/${createResponse.body.expense._id}`)
+            .delete(`/api/expenses/${expenseResponse.body.expense._id}`)
             .set("Authorization", `Bearer ${userToken}`)
 
         assert.equal(deleteResponse.status, 200)
@@ -259,7 +342,7 @@ test("ledger backend smoke flow", async (t) => {
             .get(`/api/accounts/balance/${targetAccountId}`)
             .set("Authorization", `Bearer ${userToken}`)
 
-        assert.equal(balanceAfterDelete.body.balance, 4900)
+        assert.equal(balanceAfterDelete.body.balance, 5900)
     })
 
     await t.test("restores and clears a browser session with an HttpOnly cookie", async () => {

@@ -1,18 +1,21 @@
-const userModel = require("../models/user.model")
 const jwt = require("jsonwebtoken")
+const userModel = require("../models/user.model")
 const tokenBlackListModel = require("../models/blackList.model")
 
 function getTokenFromRequest(req) {
-    const authorization = req.headers.authorization
-    const bearerToken = typeof authorization === "string" && authorization.startsWith("Bearer ")
-        ? authorization.slice(7).trim()
-        : ""
-    const token = req.cookies.token || bearerToken
+    if (req.cookies.token) {
+        return req.cookies.token
+    }
 
-    return typeof token === "string" && token.length <= 4096 ? token : ""
+    const authorization = req.headers.authorization
+    if (authorization?.startsWith("Bearer ")) {
+        return authorization.slice(7).trim()
+    }
+
+    return null
 }
 
-async function authMiddleware(req, res, next) {
+async function requireAuthentication(req, res, next) {
     const token = getTokenFromRequest(req)
 
     if (!token) {
@@ -21,52 +24,14 @@ async function authMiddleware(req, res, next) {
         })
     }
 
-    const isBlacklisted = await tokenBlackListModel.findOne({ token })
-
-    if (isBlacklisted) {
-        return res.status(401).json({
-            message: "Unauthorized access, token is invalid"
-        })
-    }
-
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        const user = await userModel.findById(decoded.userId)
-
-        if (!user) {
+        const blacklistedToken = await tokenBlackListModel.findOne({ token })
+        if (blacklistedToken) {
             return res.status(401).json({
-                message: "Unauthorized access, user no longer exists"
+                message: "Unauthorized access, token is invalid"
             })
         }
 
-        req.user = user
-
-        return next()
-    } catch (err) {
-        return res.status(401).json({
-            message: "Unauthorized access, token is invalid"
-        })
-    }
-}
-
-async function authSystemUserMiddleware(req, res, next) {
-    const token = getTokenFromRequest(req)
-
-    if (!token) {
-        return res.status(401).json({
-            message: "Unauthorized access, token is missing"
-        })
-    }
-
-    const isBlacklisted = await tokenBlackListModel.findOne({ token })
-
-    if (isBlacklisted) {
-        return res.status(401).json({
-            message: "Unauthorized access, token is invalid"
-        })
-    }
-
-    try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET)
         const user = await userModel.findById(decoded.userId).select("+systemUser")
 
@@ -76,25 +41,26 @@ async function authSystemUserMiddleware(req, res, next) {
             })
         }
 
-        if (!user.systemUser) {
-            return res.status(403).json({
-                message: "Forbidden access, not a system user"
-            })
-        }
-
         req.user = user
-
-        return next()
-    }
-    catch (err) {
+        next()
+    } catch {
         return res.status(401).json({
             message: "Unauthorized access, token is invalid"
         })
     }
+}
 
+function requireSystemUser(req, res, next) {
+    if (!req.user.systemUser) {
+        return res.status(403).json({
+            message: "Forbidden access, not a system user"
+        })
+    }
+
+    next()
 }
 
 module.exports = {
-    authMiddleware,
-    authSystemUserMiddleware
+    requireAuthentication,
+    requireSystemUser
 }

@@ -76,13 +76,12 @@ expenseSchema.index({ user: 1, date: -1 })
 expenseSchema.index({ user: 1, category: 1 })
 expenseSchema.index({ user: 1, type: 1 })
 
-// Only return non-deleted docs by default
+// Hide soft-deleted expenses from normal queries.
 expenseSchema.pre(/^find/, function () {
     if (!this.getQuery().includeDeleted) {
         this.where({ isDeleted: false })
     }
 })
-
 
 const expenseModel = mongoose.model("expense", expenseSchema)
 

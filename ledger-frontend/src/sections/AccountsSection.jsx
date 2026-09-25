@@ -1,5 +1,5 @@
 import { Icon } from "../icons"
-import { fmt, fmtDate } from "../lib/formatters"
+import { formatCurrency, formatDate } from "../lib/formatters"
 
 export default function AccountsSection({
     accounts,
@@ -53,12 +53,12 @@ export default function AccountsSection({
                                 <span className={`acc-status badge-${account.status.toLowerCase()}`}>{account.status}</span>
                             </div>
                             <div className="acc-balance">
-                                {balances[account._id] !== undefined ? fmt(balances[account._id]) : "—"}
+                                {balances[account._id] !== undefined ? formatCurrency(balances[account._id]) : "—"}
                             </div>
                             <div className="acc-label">Current balance</div>
                             <div className="acc-meta">
                                 <span>{account.currency}</span>
-                                <span>Opened {fmtDate(account.createdAt)}</span>
+                                <span>Opened {formatDate(account.createdAt)}</span>
                             </div>
                             <div className="acc-id">ID: ...{account._id.slice(-12)}</div>
                         </div>

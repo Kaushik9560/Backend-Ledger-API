@@ -1,5 +1,5 @@
 import { CATEGORY_META } from "../constants"
-import { fmt, fmtDate } from "../lib/formatters"
+import { formatCurrency, formatDate } from "../lib/formatters"
 import { Icon } from "../icons"
 
 const FILTERS = ["all", "expense", "income"]
@@ -62,11 +62,11 @@ export default function ExpensesSection({
                                         <div className="tx-sub">
                                             <span className="cat-tag" style={{ color: meta.color }}>{expense.category}</span>
                                             <span>·</span>
-                                            <span>{fmtDate(expense.date)}</span>
+                                            <span>{formatDate(expense.date)}</span>
                                         </div>
                                     </div>
                                     <div className={`tx-amount ${expense.type}`}>
-                                        {expense.type === "income" ? "+" : "−"}{fmt(expense.amount)}
+                                        {expense.type === "income" ? "+" : "−"}{formatCurrency(expense.amount)}
                                     </div>
                                     <span className={`type-badge badge-${expense.type}`}>{expense.type}</span>
                                     <button

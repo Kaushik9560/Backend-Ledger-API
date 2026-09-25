@@ -1,40 +1,13 @@
-const { Router } = require("express")
-const authMiddleware = require("../middleware/auth.middleware")
+const express = require("express")
+const { requireAuthentication } = require("../middleware/auth.middleware")
 const expenseController = require("../controllers/expense.controller")
 
-const expenseRoutes = Router()
+const router = express.Router()
 
-// All routes require authentication
-expenseRoutes.use(authMiddleware.authMiddleware)
+router.get("/categories", requireAuthentication, expenseController.getCategories)
+router.get("/summary", requireAuthentication, expenseController.getExpenseSummary)
+router.get("/", requireAuthentication, expenseController.getExpenses)
+router.post("/", requireAuthentication, expenseController.createExpense)
+router.delete("/:id", requireAuthentication, expenseController.deleteExpense)
 
-/**
- * GET /api/expenses/categories
- * Get list of available categories
- */
-expenseRoutes.get("/categories", expenseController.getCategories)
-
-/**
- * GET /api/expenses/summary
- * Get aggregated income/expense analytics
- */
-expenseRoutes.get("/summary", expenseController.getExpenseSummary)
-
-/**
- * GET /api/expenses
- * List all expenses with optional filters
- */
-expenseRoutes.get("/", expenseController.getExpenses)
-
-/**
- * POST /api/expenses
- * Create a new expense or income entry
- */
-expenseRoutes.post("/", expenseController.createExpense)
-
-/**
- * DELETE /api/expenses/:id
- * Delete (reverse) an expense
- */
-expenseRoutes.delete("/:id", expenseController.deleteExpense)
-
-module.exports = expenseRoutes
+module.exports = router

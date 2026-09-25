@@ -32,7 +32,6 @@ const accountSchema = new mongoose.Schema({
 accountSchema.index({ user: 1, status: 1 })
 
 accountSchema.methods.getBalance = async function (options = {}) {
-
     const aggregation = ledgerModel.aggregate([
         { $match: { account: this._id } },
         {
@@ -70,19 +69,15 @@ accountSchema.methods.getBalance = async function (options = {}) {
         aggregation.session(options.session)
     }
 
-    const balanceData = await aggregation
+    const balanceRows = await aggregation
 
-    if (balanceData.length === 0) {
+    if (balanceRows.length === 0) {
         return 0
     }
 
-    return balanceData[ 0 ].balance
-
+    return balanceRows[ 0 ].balance
 }
 
-
 const accountModel = mongoose.model("account", accountSchema)
-
-
 
 module.exports = accountModel

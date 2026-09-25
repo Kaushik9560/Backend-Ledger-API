@@ -1,5 +1,5 @@
 import { CATEGORY_META } from "../constants"
-import { fmt, fmtRelative } from "../lib/formatters"
+import { formatCurrency, formatRelativeDate } from "../lib/formatters"
 import { Icon } from "../icons"
 
 export default function DashboardSection({
@@ -25,11 +25,11 @@ export default function DashboardSection({
                 <div className="balance-hero-inner">
                     <div className="balance-label">Net balance</div>
                     <div className={`balance-amount ${netBalance >= 0 ? "positive" : "negative"}`}>
-                        {fmt(netBalance)}
+                        {formatCurrency(netBalance)}
                     </div>
                     <div className="balance-sub">
                         Across {accounts.length} account{accounts.length !== 1 ? "s" : ""}
-                        {Object.keys(balances).length > 0 && ` · Ledger: ${fmt(totalBalance)}`}
+                        {Object.keys(balances).length > 0 && ` · Ledger: ${formatCurrency(totalBalance)}`}
                     </div>
                 </div>
                 <div className="balance-hero-stats">
@@ -37,7 +37,7 @@ export default function DashboardSection({
                         <span className="hs-icon">{Icon.income}</span>
                         <div>
                             <div className="hs-label">Income</div>
-                            <div className="hs-val">{fmt(totalIncome)}</div>
+                            <div className="hs-val">{formatCurrency(totalIncome)}</div>
                         </div>
                     </div>
                     <div className="hs-divider" />
@@ -45,7 +45,7 @@ export default function DashboardSection({
                         <span className="hs-icon">{Icon.expense}</span>
                         <div>
                             <div className="hs-label">Expenses</div>
-                            <div className="hs-val">{fmt(totalExpense)}</div>
+                            <div className="hs-val">{formatCurrency(totalExpense)}</div>
                         </div>
                     </div>
                 </div>
@@ -56,7 +56,7 @@ export default function DashboardSection({
                     <div className="stat-icon">{Icon.income}</div>
                     <div className="stat-info">
                         <div className="stat-label">Total income</div>
-                        <div className="stat-val">{fmt(totalIncome)}</div>
+                        <div className="stat-val">{formatCurrency(totalIncome)}</div>
                         <div className="stat-sub">{incomeCount} entries</div>
                     </div>
                 </div>
@@ -64,7 +64,7 @@ export default function DashboardSection({
                     <div className="stat-icon">{Icon.expense}</div>
                     <div className="stat-info">
                         <div className="stat-label">Total expenses</div>
-                        <div className="stat-val">{fmt(totalExpense)}</div>
+                        <div className="stat-val">{formatCurrency(totalExpense)}</div>
                         <div className="stat-sub">{expenseCount} entries</div>
                     </div>
                 </div>
@@ -114,10 +114,10 @@ export default function DashboardSection({
                                             </div>
                                             <div className="tx-info">
                                                 <div className="tx-title">{expense.description || expense.category}</div>
-                                                <div className="tx-sub">{expense.category} · {fmtRelative(expense.date)}</div>
+                                                <div className="tx-sub">{expense.category} · {formatRelativeDate(expense.date)}</div>
                                             </div>
                                             <div className={`tx-amount ${expense.type}`}>
-                                                {expense.type === "income" ? "+" : "−"}{fmt(expense.amount)}
+                                                {expense.type === "income" ? "+" : "−"}{formatCurrency(expense.amount)}
                                             </div>
                                         </div>
                                     )
@@ -154,7 +154,7 @@ export default function DashboardSection({
                                             <div className="cat-bar-track">
                                                 <div className="cat-bar-fill" style={{ width: `${width}%`, background: meta.color }} />
                                             </div>
-                                            <div className="cat-bar-val">{fmt(total)}</div>
+                                            <div className="cat-bar-val">{formatCurrency(total)}</div>
                                         </div>
                                     )
                                 })}

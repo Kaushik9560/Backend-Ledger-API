@@ -5,6 +5,10 @@ const tokenBlackListModel = require("../models/blackList.model")
 
 const TOKEN_TTL_MS = 3 * 24 * 60 * 60 * 1000
 
+function createToken(userId) {
+    return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "3d" })
+}
+
 function getCookieOptions(includeMaxAge = true) {
     const configuredSameSite = String(process.env.COOKIE_SAME_SITE || "lax").toLowerCase()
     const sameSite = ["lax", "strict", "none"].includes(configuredSameSite)
@@ -43,11 +47,7 @@ function buildAuthResponse(user, token) {
     return payload
 }
 
-/**
-* - user register controller
-* - POST /api/auth/register
-*/
-async function userRegisterController(req, res) {
+async function registerUser(req, res) {
     const { email, password, name } = req.body || {}
 
     if (
@@ -68,11 +68,11 @@ async function userRegisterController(req, res) {
 
     const normalizedEmail = email.trim().toLowerCase()
 
-    const isExists = await userModel.findOne({
+    const existingUser = await userModel.findOne({
         email: normalizedEmail
     })
 
-    if (isExists) {
+    if (existingUser) {
         return res.status(422).json({
             message: "User already exists with email.",
             status: "failed"
@@ -85,7 +85,7 @@ async function userRegisterController(req, res) {
         name: name.trim()
     })
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
+    const token = createToken(user._id)
 
     res.cookie("token", token, getCookieOptions())
 
@@ -94,12 +94,7 @@ async function userRegisterController(req, res) {
     await emailService.sendRegistrationEmail(user.email, user.name)
 }
 
-/**
- * - User Login Controller
- * - POST /api/auth/login
-  */
-
-async function userLoginController(req, res) {
+async function loginUser(req, res) {
     const { email, password } = req.body || {}
 
     if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
@@ -124,20 +119,14 @@ async function userLoginController(req, res) {
         })
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
+    const token = createToken(user._id)
 
     res.cookie("token", token, getCookieOptions())
 
     res.status(200).json(buildAuthResponse(user, token))
-
 }
 
-
-/**
- * - User Logout Controller
- * - POST /api/auth/logout
-  */
-async function userLogoutController(req, res) {
+async function logoutUser(req, res) {
     const authorization = req.headers.authorization
     const bearerToken = typeof authorization === "string" && authorization.startsWith("Bearer ")
         ? authorization.slice(7).trim()
@@ -150,8 +139,6 @@ async function userLogoutController(req, res) {
         })
     }
 
-
-
     await tokenBlackListModel.updateOne(
         { token },
         { $setOnInsert: { token } },
@@ -163,10 +150,9 @@ async function userLogoutController(req, res) {
     res.status(200).json({
         message: "User logged out successfully"
     })
-
 }
 
-function getCurrentUserController(req, res) {
+function getCurrentUser(req, res) {
     return res.status(200).json({
         user: {
             _id: req.user._id,
@@ -176,10 +162,9 @@ function getCurrentUserController(req, res) {
     })
 }
 
-
 module.exports = {
-    userRegisterController,
-    userLoginController,
-    userLogoutController,
-    getCurrentUserController
+    registerUser,
+    loginUser,
+    logoutUser,
+    getCurrentUser
 }

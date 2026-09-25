@@ -97,7 +97,7 @@ Backend `.env`:
 PORT=3000
 MONGO_URI=mongodb://127.0.0.1:27017/backend-ledger
 JWT_SECRET=replace-with-a-long-random-secret
-CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173
+FRONTEND_URL=http://localhost:5173
 COOKIE_SAME_SITE=lax
 AUTH_RETURN_TOKEN=false
 EMAIL_ENABLED=false
@@ -105,8 +105,6 @@ EMAIL_USER=
 CLIENT_ID=
 CLIENT_SECRET=
 REFRESH_TOKEN=
-API_RATE_LIMIT_MAX=300
-AUTH_RATE_LIMIT_MAX=20
 ```
 
 Frontend optional `.env`:
@@ -130,22 +128,6 @@ Frontend production build:
 cd ledger-frontend
 npm run build
 ```
-
-## Production Run
-
-The backend can now serve the built frontend in production, so the app can run as a single deployable service.
-
-```powershell
-cd backend-ledger
-npm install
-npm run build
-$env:NODE_ENV="production"
-npm start
-```
-
-Open `http://localhost:3000`.
-
-For the complete MongoDB Atlas + Render deployment walkthrough, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## API Summary
 

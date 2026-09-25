@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState, useTransition } from "react"
+import { useEffect, useState } from "react"
 import { ledgerApi } from "./api"
 import { CATEGORY_META } from "./constants"
 import { Icon } from "./icons"
 import { buildCategoryTotals, buildMonthlyData, buildTopExpenseCategories } from "./lib/analytics"
-import { fmt, genIdem } from "./lib/formatters"
+import { formatCurrency, generateIdempotencyKey } from "./lib/formatters"
 import {
     clearStoredSession,
     persistStoredSession,
@@ -22,7 +22,6 @@ import BudgetSection from "./sections/BudgetSection"
 import DashboardSection from "./sections/DashboardSection"
 import ExpensesSection from "./sections/ExpensesSection"
 import TransferSection from "./sections/TransferSection"
-import "./style.css"
 
 const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Icon.dashboard },
@@ -53,7 +52,6 @@ export default function App() {
     const [expenseFilter, setExpenseFilter] = useState("all")
     const [budgets, setBudgets] = useState(() => readBudgets())
     const [budgetEdit, setBudgetEdit] = useState(null)
-    const [, startTransition] = useTransition()
 
     const totalBalance = Object.values(balances).reduce((sum, value) => sum + value, 0)
     const filteredExpenses = expenseFilter === "all"
@@ -68,7 +66,7 @@ export default function App() {
     const monthlyData = buildMonthlyData(summary?.monthlyTrend || [])
     const maxMonthlyVal = Math.max(...monthlyData.flatMap((month) => [month.income, month.expense]), 1)
 
-    function toast(type, message) {
+    function showToast(type, message) {
         const id = Date.now() + Math.random()
         setToasts((currentToasts) => [...currentToasts, { id, type, message }])
         setTimeout(() => {
@@ -80,12 +78,12 @@ export default function App() {
         setToasts((currentToasts) => currentToasts.filter((toastItem) => toastItem.id !== id))
     }
 
-    function persistSession(nextUser) {
+    function setAuthenticatedUser(nextUser) {
         persistStoredSession(nextUser)
         setUser(nextUser)
     }
 
-    function clearSession() {
+    function clearAuthenticatedSession() {
         clearStoredSession()
         setUser(null)
         setAccounts([])
@@ -105,7 +103,7 @@ export default function App() {
         }
     }
 
-    const loadAccounts = useCallback(async () => {
+    async function loadAccounts() {
         try {
             const response = await ledgerApi.listAccounts()
             setAccounts(response.accounts)
@@ -125,7 +123,7 @@ export default function App() {
         } catch {
             // Keep the current UI state if the refresh fails.
         }
-    }, [])
+    }
 
     async function handleRefreshAccounts() {
         if (!user) {
@@ -135,9 +133,9 @@ export default function App() {
         setBusyAction("refreshAccounts")
         try {
             await loadAccounts()
-            toast("success", "Accounts refreshed")
+            showToast("success", "Accounts refreshed")
         } catch {
-            toast("error", "Unable to refresh accounts right now")
+            showToast("error", "Unable to refresh accounts right now")
         } finally {
             setBusyAction(null)
         }
@@ -153,31 +151,31 @@ export default function App() {
             const response = await ledgerApi.createAccount()
             setAccounts((currentAccounts) => [response.account, ...currentAccounts])
             setBalances((currentBalances) => ({ ...currentBalances, [response.account._id]: 0 }))
-            toast("success", "New account created!")
+            showToast("success", "New account created!")
         } catch (error) {
-            toast("error", error instanceof Error ? error.message : "Failed to create account")
+            showToast("error", error instanceof Error ? error.message : "Failed to create account")
         } finally {
             setBusyAction(null)
         }
     }
 
-    const loadExpenses = useCallback(async () => {
+    async function loadExpenses() {
         try {
             const response = await ledgerApi.listExpenses({ limit: 100 })
-            startTransition(() => setExpenses(response.expenses))
+            setExpenses(response.expenses)
         } catch {
             // Keep the current UI state if the refresh fails.
         }
-    }, [])
+    }
 
-    const loadSummary = useCallback(async () => {
+    async function loadSummary() {
         try {
             const response = await ledgerApi.getExpenseSummary()
-            startTransition(() => setSummary(response))
+            setSummary(response)
         } catch {
             // Keep the current UI state if the refresh fails.
         }
-    }, [])
+    }
 
     async function handleAddExpense(form) {
         setBusyAction("addExpense")
@@ -191,11 +189,11 @@ export default function App() {
                 date: form.date,
                 tags: form.tags ? form.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : []
             })
-            toast("success", `${form.type === "income" ? "Income" : "Expense"} recorded!`)
+            showToast("success", `${form.type === "income" ? "Income" : "Expense"} recorded!`)
             setShowModal(false)
             await Promise.all([loadExpenses(), loadSummary(), loadAccounts()])
         } catch (error) {
-            toast("error", error instanceof Error ? error.message : "Failed to save")
+            showToast("error", error instanceof Error ? error.message : "Failed to save")
         } finally {
             setBusyAction(null)
         }
@@ -208,22 +206,22 @@ export default function App() {
 
         try {
             await ledgerApi.deleteExpense(id)
-            toast("success", "Entry deleted and balance reversed.")
+            showToast("success", "Entry deleted and balance reversed.")
             await Promise.all([loadExpenses(), loadSummary(), loadAccounts()])
         } catch (error) {
-            toast("error", error instanceof Error ? error.message : "Failed to delete")
+            showToast("error", error instanceof Error ? error.message : "Failed to delete")
         }
     }
 
     async function handleSeedData() {
         if (!accounts.length) {
-            toast("error", "Create an account first!")
+            showToast("error", "Create an account first!")
             return
         }
 
         const activeAccount = accounts.find((account) => account.status === "ACTIVE")
         if (!activeAccount) {
-            toast("error", "No active account")
+            showToast("error", "No active account")
             return
         }
 
@@ -263,13 +261,13 @@ export default function App() {
         }
 
         await Promise.all([loadExpenses(), loadSummary(), loadAccounts()])
-        toast("success", `${addedCount} demo transactions added!`)
+        showToast("success", `${addedCount} demo transactions added!`)
         setBusyAction(null)
     }
 
     function handleExportCSV() {
         if (!expenses.length) {
-            toast("info", "No transactions to export")
+            showToast("info", "No transactions to export")
             return
         }
 
@@ -290,13 +288,13 @@ export default function App() {
         anchor.download = `spendwise-${new Date().toISOString().split("T")[0]}.csv`
         anchor.click()
         URL.revokeObjectURL(url)
-        toast("success", "CSV downloaded!")
+        showToast("success", "CSV downloaded!")
     }
 
     function handleSaveBudget(category, value) {
         const limit = Number.parseFloat(value)
         if (Number.isNaN(limit) || limit <= 0) {
-            toast("error", "Enter a valid amount")
+            showToast("error", "Enter a valid amount")
             return
         }
 
@@ -305,14 +303,14 @@ export default function App() {
         setBudgets(updatedBudgets)
         saveBudgets(updatedBudgets)
         setBudgetEdit(null)
-        toast("success", `Budget saved for ${category}`)
+        showToast("success", `Budget saved for ${category}`)
     }
 
     function handleRemoveBudget(category) {
         const updatedBudgets = budgets.filter((budget) => budget.category !== category)
         setBudgets(updatedBudgets)
         saveBudgets(updatedBudgets)
-        toast("info", "Budget removed")
+        showToast("info", "Budget removed")
     }
 
     async function handleAuthSubmit(event) {
@@ -320,12 +318,12 @@ export default function App() {
 
         const { name, email, password } = authForm
         if (mode === "register" && !name.trim()) {
-            toast("error", "Name is required")
+            showToast("error", "Name is required")
             return
         }
 
         if (!email.trim() || !password) {
-            toast("error", "Email and password are required")
+            showToast("error", "Email and password are required")
             return
         }
 
@@ -336,9 +334,9 @@ export default function App() {
                 ? await ledgerApi.register({ name: name.trim(), email: email.trim().toLowerCase(), password })
                 : await ledgerApi.login({ email: email.trim().toLowerCase(), password })
 
-            persistSession(response.user)
+            setAuthenticatedUser(response.user)
             setAuthForm({ name: "", email: "", password: "" })
-            toast("success", `Welcome, ${response.user.name}!`)
+            showToast("success", `Welcome, ${response.user.name}!`)
             await Promise.all([
                 loadAccounts(),
                 loadExpenses(),
@@ -346,7 +344,7 @@ export default function App() {
             ])
             setActiveTab("dashboard")
         } catch (error) {
-            toast("error", error instanceof Error ? error.message : "Authentication failed")
+            showToast("error", error instanceof Error ? error.message : "Authentication failed")
         } finally {
             setBusyAction(null)
         }
@@ -361,8 +359,8 @@ export default function App() {
             // Logging out locally is enough if the request fails.
         }
 
-        clearSession()
-        toast("info", "Logged out. See you next time!")
+        clearAuthenticatedSession()
+        showToast("info", "Logged out. See you next time!")
         setBusyAction(null)
     }
 
@@ -371,18 +369,18 @@ export default function App() {
 
         const { fromAccount, toAccount, amount } = transfer
         if (!fromAccount || !toAccount || !amount) {
-            toast("error", "Fill all fields")
+            showToast("error", "Fill all fields")
             return
         }
 
         if (fromAccount === toAccount) {
-            toast("error", "From and To must differ")
+            showToast("error", "From and To must differ")
             return
         }
 
         const parsedAmount = Number.parseFloat(amount)
         if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-            toast("error", "Enter a valid amount")
+            showToast("error", "Enter a valid amount")
             return
         }
 
@@ -393,13 +391,13 @@ export default function App() {
                 fromAccount,
                 toAccount,
                 amount: parsedAmount,
-                idempotencyKey: genIdem()
+                idempotencyKey: generateIdempotencyKey()
             })
-            toast("success", `${fmt(parsedAmount)} transferred successfully!`)
+            showToast("success", `${formatCurrency(parsedAmount)} transferred successfully!`)
             setTransfer({ fromAccount: "", toAccount: "", amount: "" })
             await loadAccounts()
         } catch (error) {
-            toast("error", error instanceof Error ? error.message : "Transfer failed")
+            showToast("error", error instanceof Error ? error.message : "Transfer failed")
         } finally {
             setBusyAction(null)
         }
@@ -413,9 +411,9 @@ export default function App() {
         async function restoreSession() {
             try {
                 const response = await ledgerApi.session()
-                persistSession(response.user)
+                setAuthenticatedUser(response.user)
             } catch {
-                clearSession()
+                clearAuthenticatedSession()
             }
         }
 
@@ -428,9 +426,9 @@ export default function App() {
                 return
             }
 
-            clearSession()
+            clearAuthenticatedSession()
             setMode("login")
-            toast("info", event.detail?.message || "Session expired. Please sign in again.")
+            showToast("info", event.detail?.message || "Session expired. Please sign in again.")
         }
 
         window.addEventListener("ledger:unauthorized", handleUnauthorized)
@@ -446,7 +444,7 @@ export default function App() {
             void loadExpenses()
             void loadSummary()
         }
-    }, [user, loadAccounts, loadExpenses, loadSummary])
+    }, [user])
 
     if (!user) {
         return (

@@ -19,7 +19,7 @@ This service powers the SpendWise app with JWT auth, account creation, ledger-ba
 | `npm test` | Runs the backend smoke tests |
 | `npm run frontend:dev` | Starts the frontend from this folder |
 | `npm run frontend:build` | Builds the frontend from this folder |
-| `npm run build` | Installs frontend deps and builds the production frontend bundle |
+| `npm run build` | Builds the frontend |
 
 ## Setup
 
@@ -34,7 +34,7 @@ Update `.env` as needed:
 PORT=3000
 MONGO_URI=mongodb://127.0.0.1:27017/backend-ledger
 JWT_SECRET=replace-with-a-long-random-secret
-CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173
+FRONTEND_URL=http://localhost:5173
 COOKIE_SAME_SITE=lax
 AUTH_RETURN_TOKEN=false
 EMAIL_ENABLED=false
@@ -42,8 +42,6 @@ EMAIL_USER=
 CLIENT_ID=
 CLIENT_SECRET=
 REFRESH_TOKEN=
-API_RATE_LIMIT_MAX=300
-AUTH_RATE_LIMIT_MAX=20
 ```
 
 ## Recommended Way To Run
@@ -84,16 +82,6 @@ The test suite covers:
 - account creation and account listing
 - initial account funding through the system transaction endpoint
 - balance computation from ledger entries
-
-## Production Hosting
-
-When `NODE_ENV=production` and `../ledger-frontend/dist` exists, the backend serves the built frontend as a single deployable app.
-
-```powershell
-npm run build
-$env:NODE_ENV="production"
-npm start
-```
 
 ## API Overview
 
