@@ -696,6 +696,28 @@ input[type=date]::-webkit-calendar-picker-indicator {
 
 .modal-form { display: flex; flex-direction: column; gap: 0; }
 
+.account-modal { max-width: 440px; }
+
+.modal-description {
+    color: var(--text-2);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: -0.75rem 0 1.5rem;
+}
+
+.form-hint {
+    color: var(--text-3);
+    font-size: 0.72rem;
+    margin-top: 0.45rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
 /* Type toggle in modal */
 .type-toggle {
     display: grid;

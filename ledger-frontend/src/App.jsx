@@ -15,6 +15,7 @@ import AddExpenseModal from "./components/AddExpenseModal"
 import AppSidebar from "./components/AppSidebar"
 import AppTopbar from "./components/AppTopbar"
 import AuthScreen from "./components/AuthScreen"
+import CreateAccountModal from "./components/CreateAccountModal"
 import ToastContainer from "./components/ToastContainer"
 import AccountsSection from "./sections/AccountsSection"
 import AnalyticsSection from "./sections/AnalyticsSection"
@@ -48,6 +49,7 @@ export default function App() {
     const [activeTab, setActiveTab] = useState("dashboard")
     const [busyAction, setBusyAction] = useState(null)
     const [showModal, setShowModal] = useState(false)
+    const [showAccountModal, setShowAccountModal] = useState(false)
     const [toasts, setToasts] = useState([])
     const [expenseFilter, setExpenseFilter] = useState("all")
     const [budgets, setBudgets] = useState(() => readBudgets())
@@ -141,14 +143,8 @@ export default function App() {
         }
     }
 
-    async function handleCreateAccount() {
+    async function handleCreateAccount(accountName) {
         if (!user) {
-            return
-        }
-
-        const accountName = window.prompt("Account name (for example: SBI, Cash or Paytm)")
-
-        if (accountName === null) {
             return
         }
 
@@ -164,6 +160,7 @@ export default function App() {
             const response = await ledgerApi.createAccount({ name: trimmedName })
             setAccounts((currentAccounts) => [response.account, ...currentAccounts])
             setBalances((currentBalances) => ({ ...currentBalances, [response.account._id]: 0 }))
+            setShowAccountModal(false)
             showToast("success", `${response.account.name} created!`)
         } catch (error) {
             showToast("error", error instanceof Error ? error.message : "Failed to create account")
@@ -483,6 +480,13 @@ export default function App() {
                     busy={busyAction === "addExpense"}
                 />
             )}
+            {showAccountModal && (
+                <CreateAccountModal
+                    busy={busyAction === "createAccount"}
+                    onClose={() => setShowAccountModal(false)}
+                    onSubmit={handleCreateAccount}
+                />
+            )}
 
             <AppSidebar
                 user={user}
@@ -539,7 +543,7 @@ export default function App() {
                             balances={balances}
                             busyAction={busyAction}
                             onRefreshAccounts={handleRefreshAccounts}
-                            onCreateAccount={handleCreateAccount}
+                            onCreateAccount={() => setShowAccountModal(true)}
                         />
                     )}
 
