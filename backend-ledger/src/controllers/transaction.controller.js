@@ -1,4 +1,4 @@
-const transactionModel = require("../models/transaction.model")
+const { transactionModel } = require("../models/transaction.model")
 const ledgerModel = require("../models/ledger.model")
 const accountModel = require("../models/account.model")
 const mongoose = require("mongoose")
@@ -7,6 +7,22 @@ function transactionMatches(existingTransaction, { fromAccount, toAccount, amoun
     return existingTransaction.fromAccount.toString() === fromAccount.toString()
         && existingTransaction.toAccount.toString() === toAccount.toString()
         && existingTransaction.amount === Number(amount)
+}
+
+function toTransferResponse(transaction) {
+    const event = transaction.toObject ? transaction.toObject() : transaction
+
+    return {
+        fromAccount: event.fromAccount,
+        toAccount: event.toAccount,
+        status: event.status,
+        amount: event.amount,
+        idempotencyKey: event.idempotencyKey,
+        _id: event._id,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+        __v: event.__v
+    }
 }
 
 async function createTransaction(req, res) {
@@ -71,7 +87,7 @@ async function createTransaction(req, res) {
         if (existingTransaction.status === "COMPLETED") {
             return res.status(200).json({
                 message: "Transaction already processed",
-                transaction: existingTransaction
+                transaction: toTransferResponse(existingTransaction)
             })
         }
 
@@ -108,6 +124,8 @@ async function createTransaction(req, res) {
         }
 
         transaction = (await transactionModel.create([{
+            user: req.user._id,
+            type: "TRANSFER",
             fromAccount,
             toAccount,
             amount: parsedAmount,
@@ -151,7 +169,7 @@ async function createTransaction(req, res) {
 
     return res.status(201).json({
         message: "Transaction completed successfully",
-        transaction
+        transaction: toTransferResponse(transaction)
     })
 }
 

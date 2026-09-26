@@ -2,6 +2,8 @@
 
 This service powers the SpendWise app with JWT auth, account creation, ledger-backed balances, expense tracking, and account-to-account transfers.
 
+`Transaction` stores what happened (`INCOME`, `EXPENSE`, `TRANSFER`, or `REVERSAL`). `Ledger` stores how the balance changed (`CREDIT` or `DEBIT`).
+
 ## Requirements
 
 - Node.js 22+

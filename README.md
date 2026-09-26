@@ -129,10 +129,11 @@ npm run build
 | `POST` | `/api/expenses` | Record an income or expense |
 | `GET` | `/api/expenses` | List recent income and expenses |
 | `GET` | `/api/expenses/summary` | Return analytics summary |
-| `DELETE` | `/api/expenses/:id` | Soft-delete an expense and reverse ledger effect |
+| `DELETE` | `/api/expenses/:id` | Create a reversal event and reverse the ledger effect |
 | `POST` | `/api/transactions` | Transfer money between accounts |
 
 ## Notes For Reviewers
 
 - Transfer flows rely on MongoDB transactions; use `npm run dev:memory` or a replica-set-enabled MongoDB deployment when evaluating them manually.
-- Budgets are currently stored in frontend local storage, while ledger entries, accounts, expenses, and auth live in the backend.
+- `Transaction` records what happened (income, expense, transfer, or reversal); `Ledger` records how money moved (credit or debit).
+- Budgets are stored in frontend local storage, while transactions, ledger entries, accounts, and auth live in the backend.

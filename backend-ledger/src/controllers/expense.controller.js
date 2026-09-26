@@ -1,9 +1,42 @@
-const { expenseModel, CATEGORIES } = require("../models/expense.model")
+const { transactionModel, CATEGORIES } = require("../models/transaction.model")
 const accountModel = require("../models/account.model")
 const ledgerModel = require("../models/ledger.model")
-const transactionModel = require("../models/transaction.model")
 const mongoose = require("mongoose")
-const { randomUUID } = require("node:crypto")
+
+const MONEY_EVENT_TYPES = [ "INCOME", "EXPENSE" ]
+
+function toExpenseResponse(transaction) {
+    const event = transaction.toObject ? transaction.toObject() : transaction
+
+    return {
+        _id: event._id,
+        user: event.user,
+        account: event.account,
+        amount: event.amount,
+        type: event.type.toLowerCase(),
+        category: event.category,
+        description: event.description,
+        date: event.date,
+        isDeleted: false,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+        __v: event.__v
+    }
+}
+
+async function getReversedTransactionIds(userId, session) {
+    const query = transactionModel.find({
+        user: userId,
+        type: "REVERSAL"
+    }).select("reversesTransaction")
+
+    if (session) {
+        query.session(session)
+    }
+
+    const reversals = await query.lean()
+    return reversals.map((reversal) => reversal.reversesTransaction).filter(Boolean)
+}
 
 async function createExpense(req, res) {
     const { accountId, amount, type, category, description, date } = req.body || {}
@@ -41,7 +74,6 @@ async function createExpense(req, res) {
         return res.status(404).json({ message: "Account not found" })
     }
 
-
     const session = await mongoose.startSession()
     try {
         session.startTransaction()
@@ -63,17 +95,17 @@ async function createExpense(req, res) {
             }
         }
 
-        const idempotencyKey = `exp_${randomUUID()}`
-
         const [transaction] = await transactionModel.create([{
-            fromAccount: accountId,
-            toAccount: accountId,
+            user: req.user._id,
+            type: type.toUpperCase(),
+            account: accountId,
             amount: parsedAmount,
-            idempotencyKey,
+            category,
+            description: description || "",
+            date: parsedDate,
             status: "COMPLETED"
         }], { session })
 
-        // Income adds CREDIT; expense adds DEBIT.
         await ledgerModel.create([{
             account: accountId,
             amount: parsedAmount,
@@ -81,21 +113,11 @@ async function createExpense(req, res) {
             type: type === "income" ? "CREDIT" : "DEBIT"
         }], { session })
 
-        const [expense] = await expenseModel.create([{
-            user: req.user._id,
-            account: accountId,
-            amount: parsedAmount,
-            type,
-            category,
-            description: description || "",
-            date: parsedDate
-        }], { session })
-
         await session.commitTransaction()
 
         return res.status(201).json({
             message: "Expense recorded successfully",
-            expense
+            expense: toExpenseResponse(transaction)
         })
     } catch (error) {
         if (session.inTransaction()) {
@@ -109,46 +131,56 @@ async function createExpense(req, res) {
 }
 
 async function getExpenses(req, res) {
-    const expenses = await expenseModel.find({ user: req.user._id })
+    const reversedTransactionIds = await getReversedTransactionIds(req.user._id)
+
+    const transactions = await transactionModel.find({
+        user: req.user._id,
+        type: { $in: MONEY_EVENT_TYPES },
+        _id: { $nin: reversedTransactionIds }
+    })
         .sort({ date: -1, createdAt: -1 })
         .limit(100)
         .lean()
 
-    return res.status(200).json({ expenses })
+    return res.status(200).json({
+        expenses: transactions.map(toExpenseResponse)
+    })
 }
 
 async function getExpenseSummary(req, res) {
+    const reversedTransactionIds = await getReversedTransactionIds(req.user._id)
     const matchStage = {
         user: new mongoose.Types.ObjectId(req.user._id),
-        isDeleted: false
+        type: { $in: MONEY_EVENT_TYPES },
+        _id: { $nin: reversedTransactionIds }
     }
 
     const [ overallSummary, categoryBreakdown, monthlyTrend ] = await Promise.all([
-        // Total income vs expense
-        expenseModel.aggregate([
+        transactionModel.aggregate([
             { $match: matchStage },
             {
                 $group: {
-                    _id: "$type",
+                    _id: { $toLower: "$type" },
                     total: { $sum: "$amount" },
                     count: { $sum: 1 }
                 }
             }
         ]),
-        // Category-wise breakdown
-        expenseModel.aggregate([
+        transactionModel.aggregate([
             { $match: matchStage },
             {
                 $group: {
-                    _id: { category: "$category", type: "$type" },
+                    _id: {
+                        category: "$category",
+                        type: { $toLower: "$type" }
+                    },
                     total: { $sum: "$amount" },
                     count: { $sum: 1 }
                 }
             },
             { $sort: { total: -1 } }
         ]),
-        // Last 6 months monthly trend
-        expenseModel.aggregate([
+        transactionModel.aggregate([
             {
                 $match: {
                     ...matchStage,
@@ -160,7 +192,7 @@ async function getExpenseSummary(req, res) {
                     _id: {
                         year: { $year: "$date" },
                         month: { $month: "$date" },
-                        type: "$type"
+                        type: { $toLower: "$type" }
                     },
                     total: { $sum: "$amount" }
                 }
@@ -169,8 +201,8 @@ async function getExpenseSummary(req, res) {
         ])
     ])
 
-    const income = overallSummary.find(s => s._id === "income") || { total: 0, count: 0 }
-    const expense = overallSummary.find(s => s._id === "expense") || { total: 0, count: 0 }
+    const income = overallSummary.find((item) => item._id === "income") || { total: 0, count: 0 }
+    const expense = overallSummary.find((item) => item._id === "expense") || { total: 0, count: 0 }
 
     return res.status(200).json({
         summary: {
@@ -196,42 +228,45 @@ async function deleteExpense(req, res) {
     try {
         session.startTransaction()
 
-        const expense = await expenseModel.findOne({
+        const transaction = await transactionModel.findOne({
             _id: id,
-            user: req.user._id
+            user: req.user._id,
+            type: { $in: MONEY_EVENT_TYPES }
         }).session(session)
 
-        if (!expense) {
+        const existingReversal = transaction && await transactionModel.findOne({
+            user: req.user._id,
+            type: "REVERSAL",
+            reversesTransaction: transaction._id
+        }).session(session)
+
+        if (!transaction || existingReversal) {
             await session.abortTransaction()
             return res.status(404).json({ message: "Expense not found" })
         }
 
-        const idempotencyKey = `del_${randomUUID()}`
-
         await accountModel.updateOne(
-            { _id: expense.account },
+            { _id: transaction.account, user: req.user._id },
             { $set: { lastTransactionAt: new Date() } },
             { session }
         )
 
-        const [transaction] = await transactionModel.create([{
-            fromAccount: expense.account,
-            toAccount: expense.account,
-            amount: expense.amount,
-            idempotencyKey,
+        const [reversal] = await transactionModel.create([{
+            user: req.user._id,
+            type: "REVERSAL",
+            account: transaction.account,
+            amount: transaction.amount,
+            reversesTransaction: transaction._id,
             status: "COMPLETED"
         }], { session })
 
-        // Reverse the original financial effect by flipping CREDIT and DEBIT.
         await ledgerModel.create([{
-            account: expense.account,
-            amount: expense.amount,
-            transaction: transaction._id,
-            type: expense.type === "income" ? "DEBIT" : "CREDIT"
+            account: transaction.account,
+            amount: transaction.amount,
+            transaction: reversal._id,
+            type: transaction.type === "INCOME" ? "DEBIT" : "CREDIT"
         }], { session })
 
-        expense.isDeleted = true
-        await expense.save({ session })
         await session.commitTransaction()
 
         return res.status(200).json({ message: "Expense deleted successfully" })
@@ -240,7 +275,9 @@ async function deleteExpense(req, res) {
             await session.abortTransaction()
         }
         console.error("deleteExpense error:", error)
-        return res.status(500).json({ message: "Failed to delete expense" })
+        return res.status(error.code === 11000 ? 404 : 500).json({
+            message: error.code === 11000 ? "Expense not found" : "Failed to delete expense"
+        })
     } finally {
         await session.endSession()
     }
