@@ -11,7 +11,7 @@ import {
     readStoredUser,
     saveBudgets
 } from "./lib/storage"
-import AddExpenseModal from "./components/AddExpenseModal"
+import MoneyEventModal from "./components/MoneyEventModal"
 import AppSidebar from "./components/AppSidebar"
 import AppTopbar from "./components/AppTopbar"
 import AuthScreen from "./components/AuthScreen"
@@ -169,28 +169,28 @@ export default function App() {
         }
     }
 
-    async function loadExpenses() {
+    async function loadMoneyEvents() {
         try {
-            const response = await ledgerApi.listExpenses()
+            const response = await ledgerApi.listMoneyEvents()
             setExpenses(response.expenses)
         } catch {
             // Keep the current UI state if the refresh fails.
         }
     }
 
-    async function loadSummary() {
+    async function loadMoneyEventSummary() {
         try {
-            const response = await ledgerApi.getExpenseSummary()
+            const response = await ledgerApi.getMoneyEventSummary()
             setSummary(response)
         } catch {
             // Keep the current UI state if the refresh fails.
         }
     }
 
-    async function handleAddExpense(form) {
-        setBusyAction("addExpense")
+    async function handleAddMoneyEvent(form) {
+        setBusyAction("addMoneyEvent")
         try {
-            await ledgerApi.createExpense({
+            await ledgerApi.createMoneyEvent({
                 accountId: form.accountId,
                 amount: Number.parseFloat(form.amount),
                 type: form.type,
@@ -200,7 +200,7 @@ export default function App() {
             })
             showToast("success", `${form.type === "income" ? "Income" : "Expense"} recorded!`)
             setShowModal(false)
-            await Promise.all([loadExpenses(), loadSummary(), loadAccounts()])
+            await Promise.all([loadMoneyEvents(), loadMoneyEventSummary(), loadAccounts()])
         } catch (error) {
             showToast("error", error instanceof Error ? error.message : "Failed to save")
         } finally {
@@ -208,15 +208,15 @@ export default function App() {
         }
     }
 
-    async function handleDeleteExpense(id) {
+    async function handleReverseMoneyEvent(id) {
         if (!confirm("Delete this entry? The balance will be reversed.")) {
             return
         }
 
         try {
-            await ledgerApi.deleteExpense(id)
+            await ledgerApi.reverseMoneyEvent(id)
             showToast("success", "Entry deleted and balance reversed.")
-            await Promise.all([loadExpenses(), loadSummary(), loadAccounts()])
+            await Promise.all([loadMoneyEvents(), loadMoneyEventSummary(), loadAccounts()])
         } catch (error) {
             showToast("error", error instanceof Error ? error.message : "Failed to delete")
         }
@@ -251,7 +251,7 @@ export default function App() {
             date.setDate(date.getDate() - seed.daysAgo)
 
             try {
-                await ledgerApi.createExpense({
+                await ledgerApi.createMoneyEvent({
                     accountId: activeAccount._id,
                     amount: seed.amount,
                     type: seed.type,
@@ -265,7 +265,7 @@ export default function App() {
             }
         }
 
-        await Promise.all([loadExpenses(), loadSummary(), loadAccounts()])
+        await Promise.all([loadMoneyEvents(), loadMoneyEventSummary(), loadAccounts()])
         showToast("success", `${addedCount} demo transactions added!`)
         setBusyAction(null)
     }
@@ -344,8 +344,8 @@ export default function App() {
             showToast("success", `Welcome, ${response.user.name}!`)
             await Promise.all([
                 loadAccounts(),
-                loadExpenses(),
-                loadSummary()
+                loadMoneyEvents(),
+                loadMoneyEventSummary()
             ])
             setActiveTab("dashboard")
         } catch (error) {
@@ -446,8 +446,8 @@ export default function App() {
     useEffect(() => {
         if (user) {
             void loadAccounts()
-            void loadExpenses()
-            void loadSummary()
+            void loadMoneyEvents()
+            void loadMoneyEventSummary()
         }
     }, [user])
 
@@ -473,11 +473,11 @@ export default function App() {
         <div className="app-shell">
             <ToastContainer toasts={toasts} onRemove={removeToast} />
             {showModal && (
-                <AddExpenseModal
+                <MoneyEventModal
                     accounts={accounts}
                     onClose={() => setShowModal(false)}
-                    onSubmit={handleAddExpense}
-                    busy={busyAction === "addExpense"}
+                    onSubmit={handleAddMoneyEvent}
+                    busy={busyAction === "addMoneyEvent"}
                 />
             )}
             {showAccountModal && (
@@ -523,7 +523,7 @@ export default function App() {
                             filteredExpenses={filteredExpenses}
                             onSetExpenseFilter={setExpenseFilter}
                             onShowModal={() => setShowModal(true)}
-                            onDeleteExpense={handleDeleteExpense}
+                            onReverseMoneyEvent={handleReverseMoneyEvent}
                         />
                     )}
 

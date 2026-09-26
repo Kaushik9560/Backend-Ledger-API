@@ -80,14 +80,16 @@ Use a replica set enabled MongoDB deployment if you want to exercise transfer fl
 | `GET` | `/api/accounts` |
 | `GET` | `/api/accounts/balance/:accountId` |
 
-### Expenses
+### Income and expense events
 
-| Method | Endpoint |
-| --- | --- |
-| `POST` | `/api/expenses` |
-| `GET` | `/api/expenses` |
-| `GET` | `/api/expenses/summary` |
-| `DELETE` | `/api/expenses/:id` |
+The route name stays `/api/expenses` because it is the existing frontend API contract. Internally, these endpoints use `Transaction` documents.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/expenses` | Record an income or expense event |
+| `GET` | `/api/expenses` | List active income and expense events |
+| `GET` | `/api/expenses/summary` | Calculate income and expense analytics |
+| `DELETE` | `/api/expenses/:id` | Append a reversal transaction and reverse the ledger effect |
 
 ### Transactions
 

@@ -9,7 +9,7 @@ export default function ExpensesSection({
     filteredExpenses,
     onSetExpenseFilter,
     onShowModal,
-    onDeleteExpense
+    onReverseMoneyEvent
 }) {
     return (
         <div className="page-enter">
@@ -71,7 +71,7 @@ export default function ExpensesSection({
                                     <span className={`type-badge badge-${expense.type}`}>{expense.type}</span>
                                     <button
                                         className="icon-btn delete-btn"
-                                        onClick={() => void onDeleteExpense(expense._id)}
+                                        onClick={() => void onReverseMoneyEvent(expense._id)}
                                         title="Delete"
                                         id={`delete-${expense._id}`}
                                     >

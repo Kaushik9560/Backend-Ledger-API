@@ -44,8 +44,8 @@ export const ledgerApi = {
     createAccount: (body) => request("/api/accounts", { method: "POST", body }),
     getBalance: (accountId) => request(`/api/accounts/balance/${accountId}`),
     transfer: (body) => request("/api/transactions", { method: "POST", body }),
-    createExpense: (body) => request("/api/expenses", { method: "POST", body }),
-    listExpenses: () => request("/api/expenses"),
-    getExpenseSummary: () => request("/api/expenses/summary"),
-    deleteExpense: (id) => request(`/api/expenses/${id}`, { method: "DELETE" })
+    createMoneyEvent: (body) => request("/api/expenses", { method: "POST", body }),
+    listMoneyEvents: () => request("/api/expenses"),
+    getMoneyEventSummary: () => request("/api/expenses/summary"),
+    reverseMoneyEvent: (id) => request(`/api/expenses/${id}`, { method: "DELETE" })
 }

@@ -2,7 +2,7 @@ import { useRef, useState } from "react"
 import { CATEGORY_META } from "../constants"
 import { Icon } from "../icons"
 
-function emptyExpenseForm() {
+function emptyMoneyEventForm() {
     return {
         accountId: "",
         amount: "",
@@ -13,8 +13,8 @@ function emptyExpenseForm() {
     }
 }
 
-export default function AddExpenseModal({ accounts, onClose, onSubmit, busy }) {
-    const [form, setForm] = useState(emptyExpenseForm)
+export default function MoneyEventModal({ accounts, onClose, onSubmit, busy }) {
+    const [form, setForm] = useState(emptyMoneyEventForm)
     const overlayRef = useRef(null)
     const categories = Object.keys(CATEGORY_META)
 

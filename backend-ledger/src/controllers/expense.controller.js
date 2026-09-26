@@ -5,7 +5,7 @@ const mongoose = require("mongoose")
 
 const MONEY_EVENT_TYPES = [ "INCOME", "EXPENSE" ]
 
-function toExpenseResponse(transaction) {
+function toMoneyEventResponse(transaction) {
     const event = transaction.toObject ? transaction.toObject() : transaction
 
     return {
@@ -17,7 +17,6 @@ function toExpenseResponse(transaction) {
         category: event.category,
         description: event.description,
         date: event.date,
-        isDeleted: false,
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
         __v: event.__v
@@ -38,7 +37,7 @@ async function getReversedTransactionIds(userId, session) {
     return reversals.map((reversal) => reversal.reversesTransaction).filter(Boolean)
 }
 
-async function createExpense(req, res) {
+async function createMoneyEvent(req, res) {
     const { accountId, amount, type, category, description, date } = req.body || {}
 
     if (!accountId || amount === undefined || !type || !category) {
@@ -78,7 +77,7 @@ async function createExpense(req, res) {
     try {
         session.startTransaction()
 
-        // This write makes concurrent expenses from the same account conflict safely.
+        // This write makes concurrent money events from the same account conflict safely.
         await accountModel.updateOne(
             { _id: account._id, user: req.user._id },
             { $set: { lastTransactionAt: new Date() } },
@@ -116,21 +115,23 @@ async function createExpense(req, res) {
         await session.commitTransaction()
 
         return res.status(201).json({
-            message: "Expense recorded successfully",
-            expense: toExpenseResponse(transaction)
+            message: type === "income"
+                ? "Income recorded successfully"
+                : "Expense recorded successfully",
+            expense: toMoneyEventResponse(transaction)
         })
     } catch (error) {
         if (session.inTransaction()) {
             await session.abortTransaction()
         }
-        console.error("createExpense error:", error)
-        return res.status(500).json({ message: "Failed to create expense. Please try again." })
+        console.error("createMoneyEvent error:", error)
+        return res.status(500).json({ message: "Failed to record transaction. Please try again." })
     } finally {
         await session.endSession()
     }
 }
 
-async function getExpenses(req, res) {
+async function listMoneyEvents(req, res) {
     const reversedTransactionIds = await getReversedTransactionIds(req.user._id)
 
     const transactions = await transactionModel.find({
@@ -143,11 +144,11 @@ async function getExpenses(req, res) {
         .lean()
 
     return res.status(200).json({
-        expenses: transactions.map(toExpenseResponse)
+        expenses: transactions.map(toMoneyEventResponse)
     })
 }
 
-async function getExpenseSummary(req, res) {
+async function getMoneyEventSummary(req, res) {
     const reversedTransactionIds = await getReversedTransactionIds(req.user._id)
     const matchStage = {
         user: new mongoose.Types.ObjectId(req.user._id),
@@ -201,27 +202,27 @@ async function getExpenseSummary(req, res) {
         ])
     ])
 
-    const income = overallSummary.find((item) => item._id === "income") || { total: 0, count: 0 }
-    const expense = overallSummary.find((item) => item._id === "expense") || { total: 0, count: 0 }
+    const incomeTotals = overallSummary.find((item) => item._id === "income") || { total: 0, count: 0 }
+    const expenseTotals = overallSummary.find((item) => item._id === "expense") || { total: 0, count: 0 }
 
     return res.status(200).json({
         summary: {
-            totalIncome: income.total,
-            totalExpense: expense.total,
-            netBalance: income.total - expense.total,
-            incomeCount: income.count,
-            expenseCount: expense.count
+            totalIncome: incomeTotals.total,
+            totalExpense: expenseTotals.total,
+            netBalance: incomeTotals.total - expenseTotals.total,
+            incomeCount: incomeTotals.count,
+            expenseCount: expenseTotals.count
         },
         categoryBreakdown,
         monthlyTrend
     })
 }
 
-async function deleteExpense(req, res) {
+async function reverseMoneyEvent(req, res) {
     const { id } = req.params
 
     if (!mongoose.isObjectIdOrHexString(id)) {
-        return res.status(400).json({ message: "Invalid expense id" })
+        return res.status(400).json({ message: "Invalid transaction id" })
     }
 
     const session = await mongoose.startSession()
@@ -242,7 +243,7 @@ async function deleteExpense(req, res) {
 
         if (!transaction || existingReversal) {
             await session.abortTransaction()
-            return res.status(404).json({ message: "Expense not found" })
+            return res.status(404).json({ message: "Transaction not found" })
         }
 
         await accountModel.updateOne(
@@ -269,14 +270,14 @@ async function deleteExpense(req, res) {
 
         await session.commitTransaction()
 
-        return res.status(200).json({ message: "Expense deleted successfully" })
+        return res.status(200).json({ message: "Transaction reversed successfully" })
     } catch (error) {
         if (session.inTransaction()) {
             await session.abortTransaction()
         }
-        console.error("deleteExpense error:", error)
+        console.error("reverseMoneyEvent error:", error)
         return res.status(error.code === 11000 ? 404 : 500).json({
-            message: error.code === 11000 ? "Expense not found" : "Failed to delete expense"
+            message: error.code === 11000 ? "Transaction not found" : "Failed to reverse transaction"
         })
     } finally {
         await session.endSession()
@@ -284,8 +285,8 @@ async function deleteExpense(req, res) {
 }
 
 module.exports = {
-    createExpense,
-    getExpenses,
-    getExpenseSummary,
-    deleteExpense
+    createMoneyEvent,
+    listMoneyEvents,
+    getMoneyEventSummary,
+    reverseMoneyEvent
 }
