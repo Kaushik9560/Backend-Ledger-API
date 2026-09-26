@@ -1,8 +1,17 @@
 const accountModel = require("../models/account.model")
 
 async function createAccount(req, res) {
+    const { name } = req.body || {}
+
+    if (typeof name !== "string" || !name.trim() || name.trim().length > 50) {
+        return res.status(400).json({
+            message: "Account name is required and cannot exceed 50 characters"
+        })
+    }
+
     const account = await accountModel.create({
-        user: req.user._id
+        user: req.user._id,
+        name: name.trim()
     })
 
     return res.status(201).json({ account })

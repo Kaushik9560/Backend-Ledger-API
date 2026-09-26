@@ -146,12 +146,25 @@ export default function App() {
             return
         }
 
+        const accountName = window.prompt("Account name (for example: SBI, Cash or Paytm)")
+
+        if (accountName === null) {
+            return
+        }
+
+        const trimmedName = accountName.trim()
+
+        if (!trimmedName || trimmedName.length > 50) {
+            showToast("error", "Account name must be between 1 and 50 characters")
+            return
+        }
+
         setBusyAction("createAccount")
         try {
-            const response = await ledgerApi.createAccount()
+            const response = await ledgerApi.createAccount({ name: trimmedName })
             setAccounts((currentAccounts) => [response.account, ...currentAccounts])
             setBalances((currentBalances) => ({ ...currentBalances, [response.account._id]: 0 }))
-            showToast("success", "New account created!")
+            showToast("success", `${response.account.name} created!`)
         } catch (error) {
             showToast("error", error instanceof Error ? error.message : "Failed to create account")
         } finally {

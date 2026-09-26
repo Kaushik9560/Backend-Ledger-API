@@ -103,7 +103,7 @@ export default function AddExpenseModal({ accounts, onClose, onSubmit, busy }) {
                             <option value="">Select account...</option>
                             {accounts.map((account) => (
                                 <option key={account._id} value={account._id}>
-                                    INR · ...{account._id.slice(-8)}
+                                    {account.name || `Account ...${account._id.slice(-8)}`}
                                 </option>
                             ))}
                         </select>

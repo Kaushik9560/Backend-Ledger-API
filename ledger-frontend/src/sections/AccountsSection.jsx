@@ -52,6 +52,9 @@ export default function AccountsSection({
                                 <div className="acc-icon">{Icon.accounts}</div>
                                 <span className="acc-status badge-active">ACTIVE</span>
                             </div>
+                            <div className="acc-name">
+                                {account.name || `Account ...${account._id.slice(-8)}`}
+                            </div>
                             <div className="acc-balance">
                                 {balances[account._id] !== undefined ? formatCurrency(balances[account._id]) : "—"}
                             </div>

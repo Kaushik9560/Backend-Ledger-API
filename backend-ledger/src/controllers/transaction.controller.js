@@ -46,11 +46,14 @@ async function createTransaction(req, res) {
         return res.status(403).json({ message: "You can only transfer from your own account" })
     }
 
-    const destinationAccount = await accountModel.findById(toAccount)
+    const destinationAccount = await accountModel.findOne({
+        _id: toAccount,
+        user: req.user._id
+    })
 
     if (!destinationAccount) {
         return res.status(400).json({
-            message: "Invalid toAccount"
+            message: "You can only transfer to your own account"
         })
     }
 

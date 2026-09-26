@@ -41,7 +41,7 @@ export default function TransferSection({
                                         <option value="">Select source account...</option>
                                         {accounts.map((account) => (
                                             <option key={account._id} value={account._id}>
-                                                INR · ...{account._id.slice(-8)} — {balances[account._id] !== undefined ? formatCurrency(balances[account._id]) : "?"}
+                                                {account.name || `Account ...${account._id.slice(-8)}`} — {balances[account._id] !== undefined ? formatCurrency(balances[account._id]) : "?"}
                                             </option>
                                         ))}
                                     </select>
@@ -58,7 +58,7 @@ export default function TransferSection({
                                         <option value="">Select destination account...</option>
                                         {accounts.filter((account) => account._id !== transfer.fromAccount).map((account) => (
                                             <option key={account._id} value={account._id}>
-                                                INR · ...{account._id.slice(-8)}
+                                                {account.name || `Account ...${account._id.slice(-8)}`}
                                             </option>
                                         ))}
                                     </select>

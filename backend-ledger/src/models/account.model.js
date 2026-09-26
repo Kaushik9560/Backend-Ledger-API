@@ -8,6 +8,12 @@ const accountSchema = new mongoose.Schema({
         required: [ true, "Account must be associated with a user" ],
         index: true
     },
+    name: {
+        type: String,
+        required: [ true, "Account name is required" ],
+        trim: true,
+        maxlength: [ 50, "Account name cannot exceed 50 characters" ]
+    },
     lastTransactionAt: Date
 }, {
     timestamps: true

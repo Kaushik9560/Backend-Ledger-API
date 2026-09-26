@@ -1672,6 +1672,13 @@ input[type=date]::-webkit-calendar-picker-indicator {
     text-transform: uppercase;
 }
 
+.acc-name {
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 650;
+    margin-bottom: 0.5rem;
+}
+
 .acc-balance {
     font-size: 1.6rem;
     font-weight: 700;
