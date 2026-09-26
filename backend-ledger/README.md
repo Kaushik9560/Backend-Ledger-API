@@ -71,6 +71,7 @@ Use a replica set enabled MongoDB deployment if you want to exercise transfer fl
 | `POST` | `/api/auth/login` |
 | `GET` | `/api/auth/session` |
 | `POST` | `/api/auth/logout` |
+| `DELETE` | `/api/auth/account` |
 
 ### Accounts
 
@@ -79,6 +80,7 @@ Use a replica set enabled MongoDB deployment if you want to exercise transfer fl
 | `POST` | `/api/accounts` |
 | `GET` | `/api/accounts` |
 | `GET` | `/api/accounts/balance/:accountId` |
+| `DELETE` | `/api/accounts/:accountId` |
 
 ### Income and expense events
 
@@ -96,3 +98,15 @@ The route name stays `/api/expenses` because it is the existing frontend API con
 | Method | Endpoint |
 | --- | --- |
 | `POST` | `/api/transactions` |
+
+### Budgets
+
+Budgets are stored per authenticated user in MongoDB and sync across devices.
+
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/api/budgets` |
+| `POST` | `/api/budgets` |
+| `DELETE` | `/api/budgets/:category` |
+
+A financial account can be deleted only when its ledger balance is zero. The account is archived so its transaction and ledger audit history remains valid. Deleting the user account permanently removes all data owned by that user in one MongoDB transaction.

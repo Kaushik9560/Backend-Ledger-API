@@ -10,4 +10,6 @@ router.get("/", requireAuthentication, accountController.listUserAccounts)
 
 router.get("/balance/:accountId", requireAuthentication, accountController.getAccountBalance)
 
+router.delete("/:accountId", requireAuthentication, accountController.archiveAccount)
+
 module.exports = router

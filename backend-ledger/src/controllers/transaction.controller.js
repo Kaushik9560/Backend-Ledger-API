@@ -55,7 +55,8 @@ async function createTransaction(req, res) {
 
     const sourceAccount = await accountModel.findOne({
         _id: fromAccount,
-        user: req.user._id
+        user: req.user._id,
+        isArchived: false
     })
 
     if (!sourceAccount) {
@@ -64,7 +65,8 @@ async function createTransaction(req, res) {
 
     const destinationAccount = await accountModel.findOne({
         _id: toAccount,
-        user: req.user._id
+        user: req.user._id,
+        isArchived: false
     })
 
     if (!destinationAccount) {
@@ -109,7 +111,7 @@ async function createTransaction(req, res) {
 
         // This write makes concurrent transfers from the same account conflict safely.
         await accountModel.updateOne(
-            { _id: sourceAccount._id, user: req.user._id },
+            { _id: sourceAccount._id, user: req.user._id, isArchived: false },
             { $set: { lastTransactionAt: new Date() } },
             { session }
         )

@@ -1,32 +1,17 @@
-const storageKeys = {
-    user: "spendwise-user",
-    budgets: "spendwise-budgets"
-}
-
-export function readBudgets() {
-    try {
-        return JSON.parse(localStorage.getItem(storageKeys.budgets) || "[]")
-    } catch {
-        return []
-    }
-}
-
-export function saveBudgets(budgets) {
-    localStorage.setItem(storageKeys.budgets, JSON.stringify(budgets))
-}
+const storageKey = "spendwise-user"
 
 export function readStoredUser() {
     try {
-        return JSON.parse(localStorage.getItem(storageKeys.user) || "null")
+        return JSON.parse(localStorage.getItem(storageKey) || "null")
     } catch {
         return null
     }
 }
 
 export function persistStoredSession(user) {
-    localStorage.setItem(storageKeys.user, JSON.stringify(user))
+    localStorage.setItem(storageKey, JSON.stringify(user))
 }
 
 export function clearStoredSession() {
-    localStorage.removeItem(storageKeys.user)
+    localStorage.removeItem(storageKey)
 }

@@ -16,7 +16,7 @@ export default function BudgetSection({
     return (
         <div className="page-enter">
             <div className="budget-toolbar">
-                <p className="budget-hint">Set monthly spending limits per category. Progress is calculated from this month's expenses.</p>
+                <p className="budget-hint">Set monthly spending limits per category. Progress is calculated from this month's expenses and your limits sync across devices.</p>
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                     <button id="seed-data-btn" className="btn btn-secondary" onClick={() => void onSeedData()} disabled={busyAction === "seeding"}>
                         {busyAction === "seeding" ? <><span className="spinner" /> Seeding...</> : <>{Icon.seed} Load demo data</>}
@@ -52,7 +52,7 @@ export default function BudgetSection({
                                     </div>
                                     <div className="budget-actions">
                                         {budget && (
-                                            <button className="icon-btn" onClick={() => onRemoveBudget(category)} title="Remove budget">
+                                            <button className="icon-btn" onClick={() => void onRemoveBudget(category)} title="Remove budget" disabled={busyAction === "removeBudget"}>
                                                 {Icon.trash}
                                             </button>
                                         )}
@@ -78,12 +78,12 @@ export default function BudgetSection({
                                                 onChange={(event) => setBudgetEdit({ category, value: event.target.value })}
                                                 autoFocus
                                                 onKeyDown={(event) => {
-                                                    if (event.key === "Enter") onSaveBudget(category, budgetEdit.value)
+                                                    if (event.key === "Enter") void onSaveBudget(category, budgetEdit.value)
                                                     if (event.key === "Escape") setBudgetEdit(null)
                                                 }}
                                             />
                                         </div>
-                                        <button className="btn btn-primary btn-sm" onClick={() => onSaveBudget(category, budgetEdit.value)}>Save</button>
+                                        <button className="btn btn-primary btn-sm" onClick={() => void onSaveBudget(category, budgetEdit.value)} disabled={busyAction === "saveBudget"}>Save</button>
                                         <button className="btn btn-secondary btn-sm" onClick={() => setBudgetEdit(null)}>Cancel</button>
                                     </div>
                                 )}

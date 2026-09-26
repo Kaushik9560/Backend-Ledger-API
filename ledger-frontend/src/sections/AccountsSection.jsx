@@ -6,7 +6,9 @@ export default function AccountsSection({
     balances,
     busyAction,
     onRefreshAccounts,
-    onCreateAccount
+    onCreateAccount,
+    onDeleteAccount,
+    onDeleteUserAccount
 }) {
     return (
         <div className="page-enter">
@@ -50,7 +52,19 @@ export default function AccountsSection({
                         >
                             <div className="acc-header">
                                 <div className="acc-icon">{Icon.accounts}</div>
-                                <span className="acc-status badge-active">ACTIVE</span>
+                                <div className="acc-card-actions">
+                                    <span className="acc-status badge-active">ACTIVE</span>
+                                    <button
+                                        className="icon-btn delete-btn"
+                                        type="button"
+                                        title="Delete account"
+                                        aria-label="Delete account"
+                                        disabled={busyAction === "deleteAccount"}
+                                        onClick={() => void onDeleteAccount(account)}
+                                    >
+                                        {Icon.trash}
+                                    </button>
+                                </div>
                             </div>
                             <div className="acc-name">
                                 {account.name || `Account ...${account._id.slice(-8)}`}
@@ -77,6 +91,20 @@ export default function AccountsSection({
                     <div className="token-row">
                         <span className="token-label">Authentication</span>
                         <span className="token-val">Secure HttpOnly cookie</span>
+                    </div>
+                    <div className="danger-row">
+                        <div>
+                            <div className="danger-title">Delete SpendWise account</div>
+                            <div className="danger-text">Permanently removes your accounts, transactions, ledger entries and budgets.</div>
+                        </div>
+                        <button
+                            className="btn btn-danger"
+                            type="button"
+                            disabled={busyAction === "deleteUserAccount"}
+                            onClick={() => void onDeleteUserAccount()}
+                        >
+                            {busyAction === "deleteUserAccount" ? <><span className="spinner" /> Deleting...</> : "Delete my account"}
+                        </button>
                     </div>
                 </div>
             </div>

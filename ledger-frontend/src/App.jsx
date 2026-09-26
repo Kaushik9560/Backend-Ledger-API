@@ -7,9 +7,7 @@ import { formatCurrency, generateIdempotencyKey } from "./lib/formatters"
 import {
     clearStoredSession,
     persistStoredSession,
-    readBudgets,
-    readStoredUser,
-    saveBudgets
+    readStoredUser
 } from "./lib/storage"
 import MoneyEventModal from "./components/MoneyEventModal"
 import AppSidebar from "./components/AppSidebar"
@@ -52,7 +50,7 @@ export default function App() {
     const [showAccountModal, setShowAccountModal] = useState(false)
     const [toasts, setToasts] = useState([])
     const [expenseFilter, setExpenseFilter] = useState("all")
-    const [budgets, setBudgets] = useState(() => readBudgets())
+    const [budgets, setBudgets] = useState([])
     const [budgetEdit, setBudgetEdit] = useState(null)
 
     const totalBalance = Object.values(balances).reduce((sum, value) => sum + value, 0)
@@ -92,6 +90,7 @@ export default function App() {
         setBalances({})
         setExpenses([])
         setSummary(null)
+        setBudgets([])
         setActiveTab("dashboard")
     }
 
@@ -164,6 +163,33 @@ export default function App() {
             showToast("success", `${response.account.name} created!`)
         } catch (error) {
             showToast("error", error instanceof Error ? error.message : "Failed to create account")
+        } finally {
+            setBusyAction(null)
+        }
+    }
+
+    async function handleDeleteAccount(account) {
+        if (!confirm(`Delete ${account.name}? Only zero-balance accounts can be deleted.`)) {
+            return
+        }
+
+        setBusyAction("deleteAccount")
+        try {
+            await ledgerApi.deleteAccount(account._id)
+            setAccounts((currentAccounts) => currentAccounts.filter((item) => item._id !== account._id))
+            setBalances((currentBalances) => {
+                const nextBalances = { ...currentBalances }
+                delete nextBalances[account._id]
+                return nextBalances
+            })
+            setTransfer((currentTransfer) => ({
+                fromAccount: currentTransfer.fromAccount === account._id ? "" : currentTransfer.fromAccount,
+                toAccount: currentTransfer.toAccount === account._id ? "" : currentTransfer.toAccount,
+                amount: currentTransfer.amount
+            }))
+            showToast("success", "Account deleted")
+        } catch (error) {
+            showToast("error", error instanceof Error ? error.message : "Failed to delete account")
         } finally {
             setBusyAction(null)
         }
@@ -296,26 +322,49 @@ export default function App() {
         showToast("success", "CSV downloaded!")
     }
 
-    function handleSaveBudget(category, value) {
+    async function loadBudgets() {
+        try {
+            const response = await ledgerApi.listBudgets()
+            setBudgets(response.budgets)
+        } catch {
+            // Keep current budgets if refresh fails.
+        }
+    }
+
+    async function handleSaveBudget(category, value) {
         const limit = Number.parseFloat(value)
         if (Number.isNaN(limit) || limit <= 0) {
             showToast("error", "Enter a valid amount")
             return
         }
 
-        const updatedBudgets = budgets.filter((budget) => budget.category !== category)
-        updatedBudgets.push({ category, limit })
-        setBudgets(updatedBudgets)
-        saveBudgets(updatedBudgets)
-        setBudgetEdit(null)
-        showToast("success", `Budget saved for ${category}`)
+        setBusyAction("saveBudget")
+        try {
+            const response = await ledgerApi.saveBudget({ category, limit })
+            setBudgets((currentBudgets) => [
+                ...currentBudgets.filter((budget) => budget.category !== category),
+                response.budget
+            ])
+            setBudgetEdit(null)
+            showToast("success", "Budget saved for " + category)
+        } catch (error) {
+            showToast("error", error instanceof Error ? error.message : "Failed to save budget")
+        } finally {
+            setBusyAction(null)
+        }
     }
 
-    function handleRemoveBudget(category) {
-        const updatedBudgets = budgets.filter((budget) => budget.category !== category)
-        setBudgets(updatedBudgets)
-        saveBudgets(updatedBudgets)
-        showToast("info", "Budget removed")
+    async function handleRemoveBudget(category) {
+        setBusyAction("removeBudget")
+        try {
+            await ledgerApi.removeBudget(category)
+            setBudgets((currentBudgets) => currentBudgets.filter((budget) => budget.category !== category))
+            showToast("info", "Budget removed")
+        } catch (error) {
+            showToast("error", error instanceof Error ? error.message : "Failed to remove budget")
+        } finally {
+            setBusyAction(null)
+        }
     }
 
     async function handleAuthSubmit(event) {
@@ -345,7 +394,8 @@ export default function App() {
             await Promise.all([
                 loadAccounts(),
                 loadMoneyEvents(),
-                loadMoneyEventSummary()
+                loadMoneyEventSummary(),
+                loadBudgets()
             ])
             setActiveTab("dashboard")
         } catch (error) {
@@ -367,6 +417,24 @@ export default function App() {
         clearAuthenticatedSession()
         showToast("info", "Logged out. See you next time!")
         setBusyAction(null)
+    }
+
+    async function handleDeleteUserAccount() {
+        if (!confirm("Permanently delete your SpendWise account and all financial data? This cannot be undone.")) {
+            return
+        }
+
+        setBusyAction("deleteUserAccount")
+        try {
+            await ledgerApi.deleteUserAccount()
+            clearAuthenticatedSession()
+            setMode("login")
+            showToast("info", "Your SpendWise account was deleted")
+        } catch (error) {
+            showToast("error", error instanceof Error ? error.message : "Failed to delete user account")
+        } finally {
+            setBusyAction(null)
+        }
     }
 
     async function handleTransfer(event) {
@@ -448,6 +516,7 @@ export default function App() {
             void loadAccounts()
             void loadMoneyEvents()
             void loadMoneyEventSummary()
+            void loadBudgets()
         }
     }, [user])
 
@@ -544,6 +613,8 @@ export default function App() {
                             busyAction={busyAction}
                             onRefreshAccounts={handleRefreshAccounts}
                             onCreateAccount={() => setShowAccountModal(true)}
+                            onDeleteAccount={handleDeleteAccount}
+                            onDeleteUserAccount={handleDeleteUserAccount}
                         />
                     )}
 

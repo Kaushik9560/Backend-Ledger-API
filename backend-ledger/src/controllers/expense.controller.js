@@ -68,7 +68,7 @@ async function createMoneyEvent(req, res) {
         return res.status(400).json({ message: "Date must be a valid date" })
     }
 
-    const account = await accountModel.findOne({ _id: accountId, user: req.user._id })
+    const account = await accountModel.findOne({ _id: accountId, user: req.user._id, isArchived: false })
     if (!account) {
         return res.status(404).json({ message: "Account not found" })
     }
@@ -79,7 +79,7 @@ async function createMoneyEvent(req, res) {
 
         // This write makes concurrent money events from the same account conflict safely.
         await accountModel.updateOne(
-            { _id: account._id, user: req.user._id },
+            { _id: account._id, user: req.user._id, isArchived: false },
             { $set: { lastTransactionAt: new Date() } },
             { session }
         )
@@ -246,8 +246,19 @@ async function reverseMoneyEvent(req, res) {
             return res.status(404).json({ message: "Transaction not found" })
         }
 
+        const activeAccount = await accountModel.findOne({
+            _id: transaction.account,
+            user: req.user._id,
+            isArchived: false
+        }).session(session)
+
+        if (!activeAccount) {
+            await session.abortTransaction()
+            return res.status(400).json({ message: "Deleted accounts cannot be changed" })
+        }
+
         await accountModel.updateOne(
-            { _id: transaction.account, user: req.user._id },
+            { _id: transaction.account, user: req.user._id, isArchived: false },
             { $set: { lastTransactionAt: new Date() } },
             { session }
         )

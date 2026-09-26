@@ -14,6 +14,10 @@ const accountSchema = new mongoose.Schema({
         trim: true,
         maxlength: [ 50, "Account name cannot exceed 50 characters" ]
     },
+    isArchived: {
+        type: Boolean,
+        default: false
+    },
     lastTransactionAt: Date
 }, {
     timestamps: true

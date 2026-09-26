@@ -1,6 +1,11 @@
 const userModel = require("../models/user.model")
 const jwt = require("jsonwebtoken")
 const tokenBlackListModel = require("../models/blackList.model")
+const accountModel = require("../models/account.model")
+const { transactionModel } = require("../models/transaction.model")
+const ledgerModel = require("../models/ledger.model")
+const budgetModel = require("../models/budget.model")
+const mongoose = require("mongoose")
 
 const TOKEN_TTL_MS = 3 * 24 * 60 * 60 * 1000
 
@@ -146,9 +151,46 @@ function getCurrentUser(req, res) {
     })
 }
 
+async function deleteUserAccount(req, res) {
+    const session = await mongoose.startSession()
+
+    try {
+        session.startTransaction()
+
+        const accounts = await accountModel.find({ user: req.user._id })
+            .select("_id")
+            .session(session)
+        const accountIds = accounts.map((account) => account._id)
+
+        await ledgerModel.collection.deleteMany(
+            { account: { $in: accountIds } },
+            { session }
+        )
+        await transactionModel.deleteMany({ user: req.user._id }, { session })
+        await budgetModel.deleteMany({ user: req.user._id }, { session })
+        await accountModel.deleteMany({ user: req.user._id }, { session })
+        await userModel.deleteOne({ _id: req.user._id }, { session })
+
+        await session.commitTransaction()
+        res.clearCookie("token", getCookieOptions(false))
+
+        return res.status(200).json({ message: "User account deleted successfully" })
+    } catch (error) {
+        if (session.inTransaction()) {
+            await session.abortTransaction()
+        }
+
+        console.error("deleteUserAccount error:", error)
+        return res.status(500).json({ message: "Failed to delete user account" })
+    } finally {
+        await session.endSession()
+    }
+}
+
 module.exports = {
     registerUser,
     loginUser,
     logoutUser,
-    getCurrentUser
+    getCurrentUser,
+    deleteUserAccount
 }
