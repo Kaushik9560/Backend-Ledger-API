@@ -12,6 +12,7 @@ const app = express()
 
 const allowedOrigins = [
     process.env.FRONTEND_URL,
+    "https://spendwise-0d92.onrender.com",
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
