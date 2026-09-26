@@ -50,14 +50,14 @@ export default function AccountsSection({
                         >
                             <div className="acc-header">
                                 <div className="acc-icon">{Icon.accounts}</div>
-                                <span className={`acc-status badge-${account.status.toLowerCase()}`}>{account.status}</span>
+                                <span className="acc-status badge-active">ACTIVE</span>
                             </div>
                             <div className="acc-balance">
                                 {balances[account._id] !== undefined ? formatCurrency(balances[account._id]) : "—"}
                             </div>
                             <div className="acc-label">Current balance</div>
                             <div className="acc-meta">
-                                <span>{account.currency}</span>
+                                <span>INR</span>
                                 <span>Opened {formatDate(account.createdAt)}</span>
                             </div>
                             <div className="acc-id">ID: ...{account._id.slice(-12)}</div>

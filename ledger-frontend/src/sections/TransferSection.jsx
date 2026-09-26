@@ -10,8 +10,6 @@ export default function TransferSection({
     onSubmit,
     onGoToAccounts
 }) {
-    const activeAccounts = accounts.filter((account) => account.status === "ACTIVE")
-
     return (
         <div className="page-enter">
             <div className="transfer-layout">
@@ -41,9 +39,9 @@ export default function TransferSection({
                                         required
                                     >
                                         <option value="">Select source account...</option>
-                                        {activeAccounts.map((account) => (
+                                        {accounts.map((account) => (
                                             <option key={account._id} value={account._id}>
-                                                {account.currency} · ...{account._id.slice(-8)} — {balances[account._id] !== undefined ? formatCurrency(balances[account._id]) : "?"}
+                                                INR · ...{account._id.slice(-8)} — {balances[account._id] !== undefined ? formatCurrency(balances[account._id]) : "?"}
                                             </option>
                                         ))}
                                     </select>
@@ -58,9 +56,9 @@ export default function TransferSection({
                                         required
                                     >
                                         <option value="">Select destination account...</option>
-                                        {activeAccounts.filter((account) => account._id !== transfer.fromAccount).map((account) => (
+                                        {accounts.filter((account) => account._id !== transfer.fromAccount).map((account) => (
                                             <option key={account._id} value={account._id}>
-                                                {account.currency} · ...{account._id.slice(-8)}
+                                                INR · ...{account._id.slice(-8)}
                                             </option>
                                         ))}
                                     </select>

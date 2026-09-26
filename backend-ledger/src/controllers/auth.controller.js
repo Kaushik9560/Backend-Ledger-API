@@ -1,6 +1,5 @@
 const userModel = require("../models/user.model")
 const jwt = require("jsonwebtoken")
-const emailService = require("../services/email.service")
 const tokenBlackListModel = require("../models/blackList.model")
 
 const TOKEN_TTL_MS = 3 * 24 * 60 * 60 * 1000
@@ -28,23 +27,14 @@ function getCookieOptions(includeMaxAge = true) {
     return options
 }
 
-function buildAuthResponse(user, token) {
-    const payload = {
+function buildAuthResponse(user) {
+    return {
         user: {
             _id: user._id,
             email: user.email,
             name: user.name
         }
     }
-
-    const shouldReturnToken = process.env.NODE_ENV !== "production"
-        || ["true", "1", "yes"].includes(String(process.env.AUTH_RETURN_TOKEN || "").toLowerCase())
-
-    if (shouldReturnToken) {
-        payload.token = token
-    }
-
-    return payload
 }
 
 async function registerUser(req, res) {
@@ -74,8 +64,7 @@ async function registerUser(req, res) {
 
     if (existingUser) {
         return res.status(422).json({
-            message: "User already exists with email.",
-            status: "failed"
+            message: "User already exists with email."
         })
     }
 
@@ -89,9 +78,8 @@ async function registerUser(req, res) {
 
     res.cookie("token", token, getCookieOptions())
 
-    res.status(201).json(buildAuthResponse(user, token))
+    res.status(201).json(buildAuthResponse(user))
 
-    await emailService.sendRegistrationEmail(user.email, user.name)
 }
 
 async function loginUser(req, res) {
@@ -123,15 +111,11 @@ async function loginUser(req, res) {
 
     res.cookie("token", token, getCookieOptions())
 
-    res.status(200).json(buildAuthResponse(user, token))
+    res.status(200).json(buildAuthResponse(user))
 }
 
 async function logoutUser(req, res) {
-    const authorization = req.headers.authorization
-    const bearerToken = typeof authorization === "string" && authorization.startsWith("Bearer ")
-        ? authorization.slice(7).trim()
-        : ""
-    const token = req.cookies.token || bearerToken
+    const token = req.cookies.token
 
     if (!token || token.length > 4096) {
         return res.status(200).json({

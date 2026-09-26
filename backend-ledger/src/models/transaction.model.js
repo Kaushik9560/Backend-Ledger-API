@@ -4,20 +4,18 @@ const transactionSchema = new mongoose.Schema({
     fromAccount: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "account",
-        required: [ true, "Transaction must be associated with a from account" ],
-        index: true
+        required: [ true, "Transaction must be associated with a from account" ]
     },
     toAccount: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "account",
-        required: [ true, "Transaction must be associated with a to account" ],
-        index: true
+        required: [ true, "Transaction must be associated with a to account" ]
     },
     status: {
         type: String,
         enum: {
-            values: [ "PENDING", "COMPLETED", "FAILED", "REVERSED" ],
-            message: "Status can be either PENDING, COMPLETED, FAILED or REVERSED",
+            values: [ "PENDING", "COMPLETED" ],
+            message: "Status can be either PENDING or COMPLETED",
         },
         default: "PENDING"
     },
@@ -30,7 +28,6 @@ const transactionSchema = new mongoose.Schema({
         type: String,
         required: [ true, "Idempotency Key is required for creating a transaction" ],
         maxlength: [ 128, "Idempotency key cannot exceed 128 characters" ],
-        index: true,
         unique: true
     }
 }, {

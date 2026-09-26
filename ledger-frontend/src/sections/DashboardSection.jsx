@@ -73,7 +73,7 @@ export default function DashboardSection({
                     <div className="stat-info">
                         <div className="stat-label">Accounts</div>
                         <div className="stat-val">{accounts.length}</div>
-                        <div className="stat-sub">{accounts.filter((account) => account.status === "ACTIVE").length} active</div>
+                        <div className="stat-sub">{accounts.length} active</div>
                     </div>
                 </div>
                 <div className="stat-card" style={{ "--accent": "var(--amber)" }}>

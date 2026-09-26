@@ -16,10 +16,6 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 
-app.get("/", (req, res) => {
-    res.send("Ledger Service is up and running")
-})
-
 app.get("/api/health", (req, res) => {
     res.json({
         status: "ok",

@@ -161,7 +161,7 @@ export default function App() {
 
     async function loadExpenses() {
         try {
-            const response = await ledgerApi.listExpenses({ limit: 100 })
+            const response = await ledgerApi.listExpenses()
             setExpenses(response.expenses)
         } catch {
             // Keep the current UI state if the refresh fails.
@@ -186,8 +186,7 @@ export default function App() {
                 type: form.type,
                 category: form.category,
                 description: form.description,
-                date: form.date,
-                tags: form.tags ? form.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : []
+                date: form.date
             })
             showToast("success", `${form.type === "income" ? "Income" : "Expense"} recorded!`)
             setShowModal(false)
@@ -219,11 +218,7 @@ export default function App() {
             return
         }
 
-        const activeAccount = accounts.find((account) => account.status === "ACTIVE")
-        if (!activeAccount) {
-            showToast("error", "No active account")
-            return
-        }
+        const activeAccount = accounts[0]
 
         setBusyAction("seeding")
 

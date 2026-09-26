@@ -22,12 +22,6 @@ const userSchema = new mongoose.Schema({
         minlength: [ 6, "Password should contain at least 6 characters" ],
         maxlength: [ 128, "Password cannot exceed 128 characters" ],
         select: false
-    },
-    systemUser: {
-        type: Boolean,
-        default: false,
-        immutable: true,
-        select: false
     }
 }, {
     timestamps: true

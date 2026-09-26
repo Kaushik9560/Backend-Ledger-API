@@ -2,21 +2,8 @@ const jwt = require("jsonwebtoken")
 const userModel = require("../models/user.model")
 const tokenBlackListModel = require("../models/blackList.model")
 
-function getTokenFromRequest(req) {
-    if (req.cookies.token) {
-        return req.cookies.token
-    }
-
-    const authorization = req.headers.authorization
-    if (authorization?.startsWith("Bearer ")) {
-        return authorization.slice(7).trim()
-    }
-
-    return null
-}
-
 async function requireAuthentication(req, res, next) {
-    const token = getTokenFromRequest(req)
+    const token = req.cookies.token
 
     if (!token) {
         return res.status(401).json({
@@ -33,7 +20,7 @@ async function requireAuthentication(req, res, next) {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        const user = await userModel.findById(decoded.userId).select("+systemUser")
+        const user = await userModel.findById(decoded.userId)
 
         if (!user) {
             return res.status(401).json({
@@ -50,17 +37,6 @@ async function requireAuthentication(req, res, next) {
     }
 }
 
-function requireSystemUser(req, res, next) {
-    if (!req.user.systemUser) {
-        return res.status(403).json({
-            message: "Forbidden access, not a system user"
-        })
-    }
-
-    next()
-}
-
 module.exports = {
-    requireAuthentication,
-    requireSystemUser
+    requireAuthentication
 }

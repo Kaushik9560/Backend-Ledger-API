@@ -26,27 +26,10 @@ async function request(path, options = {}) {
         }
 
         const error = new Error(message)
-        error.status = response.status
         throw error
     }
 
     return data
-}
-
-function buildQueryString(params) {
-    if (!params) {
-        return ""
-    }
-
-    const query = new URLSearchParams()
-
-    Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-            query.set(key, value)
-        }
-    })
-
-    return `?${query.toString()}`
 }
 
 export const ledgerApi = {
@@ -61,8 +44,7 @@ export const ledgerApi = {
     getBalance: (accountId) => request(`/api/accounts/balance/${accountId}`),
     transfer: (body) => request("/api/transactions", { method: "POST", body }),
     createExpense: (body) => request("/api/expenses", { method: "POST", body }),
-    listExpenses: (params) => request("/api/expenses" + buildQueryString(params)),
-    getExpenseSummary: (params) => request("/api/expenses/summary" + buildQueryString(params)),
-    deleteExpense: (id) => request(`/api/expenses/${id}`, { method: "DELETE" }),
-    getCategories: () => request("/api/expenses/categories")
+    listExpenses: () => request("/api/expenses"),
+    getExpenseSummary: () => request("/api/expenses/summary"),
+    deleteExpense: (id) => request(`/api/expenses/${id}`, { method: "DELETE" })
 }

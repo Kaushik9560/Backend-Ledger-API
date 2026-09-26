@@ -1,4 +1,4 @@
-export const storageKeys = {
+const storageKeys = {
     user: "spendwise-user",
     budgets: "spendwise-budgets"
 }
@@ -25,10 +25,8 @@ export function readStoredUser() {
 
 export function persistStoredSession(user) {
     localStorage.setItem(storageKeys.user, JSON.stringify(user))
-    localStorage.removeItem("spendwise-token")
 }
 
 export function clearStoredSession() {
     localStorage.removeItem(storageKeys.user)
-    localStorage.removeItem("spendwise-token")
 }

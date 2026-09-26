@@ -1,32 +1,12 @@
-const expenseModel = require("../models/expense.model")
+const { expenseModel, CATEGORIES } = require("../models/expense.model")
 const accountModel = require("../models/account.model")
 const ledgerModel = require("../models/ledger.model")
 const transactionModel = require("../models/transaction.model")
 const mongoose = require("mongoose")
 const { randomUUID } = require("node:crypto")
-const { CATEGORIES } = require("../models/expense.model")
-
-function parsePositiveInteger(value, fallback, maximum) {
-    const parsed = Number.parseInt(value, 10)
-
-    if (!Number.isInteger(parsed) || parsed < 1) {
-        return fallback
-    }
-
-    return Math.min(parsed, maximum)
-}
-
-function parseOptionalDate(value) {
-    if (!value) {
-        return null
-    }
-
-    const parsed = new Date(value)
-    return Number.isNaN(parsed.getTime()) ? undefined : parsed
-}
 
 async function createExpense(req, res) {
-    const { accountId, amount, type, category, description, date, tags } = req.body || {}
+    const { accountId, amount, type, category, description, date } = req.body || {}
 
     if (!accountId || amount === undefined || !type || !category) {
         return res.status(400).json({
@@ -51,13 +31,9 @@ async function createExpense(req, res) {
         return res.status(400).json({ message: "Invalid category" })
     }
 
-    const parsedDate = parseOptionalDate(date)
-    if (parsedDate === undefined) {
+    const parsedDate = date ? new Date(date) : new Date()
+    if (Number.isNaN(parsedDate.getTime())) {
         return res.status(400).json({ message: "Date must be a valid date" })
-    }
-
-    if (tags !== undefined && (!Array.isArray(tags) || tags.length > 20 || tags.some(tag => typeof tag !== "string" || tag.length > 40))) {
-        return res.status(400).json({ message: "Tags must contain at most 20 short text values" })
     }
 
     const account = await accountModel.findOne({ _id: accountId, user: req.user._id })
@@ -65,9 +41,6 @@ async function createExpense(req, res) {
         return res.status(404).json({ message: "Account not found" })
     }
 
-    if (account.status !== "ACTIVE") {
-        return res.status(400).json({ message: "Account is not active" })
-    }
 
     const session = await mongoose.startSession()
     try {
@@ -75,7 +48,7 @@ async function createExpense(req, res) {
 
         // This write makes concurrent expenses from the same account conflict safely.
         await accountModel.updateOne(
-            { _id: account._id, user: req.user._id, status: "ACTIVE" },
+            { _id: account._id, user: req.user._id },
             { $set: { lastTransactionAt: new Date() } },
             { session }
         )
@@ -115,8 +88,7 @@ async function createExpense(req, res) {
             type,
             category,
             description: description || "",
-            date: parsedDate || new Date(),
-            tags: tags || []
+            date: parsedDate
         }], { session })
 
         await session.commitTransaction()
@@ -137,78 +109,18 @@ async function createExpense(req, res) {
 }
 
 async function getExpenses(req, res) {
-    const { category, type, from, to, accountId, limit = 50, page = 1 } = req.query
+    const expenses = await expenseModel.find({ user: req.user._id })
+        .sort({ date: -1, createdAt: -1 })
+        .limit(100)
+        .lean()
 
-    const query = { user: req.user._id }
-
-    if (category && !CATEGORIES.includes(category)) {
-        return res.status(400).json({ message: "Invalid category" })
-    }
-    if (type && !["income", "expense"].includes(type)) {
-        return res.status(400).json({ message: "Invalid type" })
-    }
-    if (accountId && !mongoose.isObjectIdOrHexString(accountId)) {
-        return res.status(400).json({ message: "Invalid accountId" })
-    }
-
-    const fromDate = parseOptionalDate(from)
-    const toDate = parseOptionalDate(to)
-    if (fromDate === undefined || toDate === undefined) {
-        return res.status(400).json({ message: "Invalid date filter" })
-    }
-
-    if (category) query.category = category
-    if (type) query.type = type
-    if (accountId) query.account = accountId
-    if (from || to) {
-        query.date = {}
-        if (fromDate) query.date.$gte = fromDate
-        if (toDate) query.date.$lte = toDate
-    }
-
-    const safePage = parsePositiveInteger(page, 1, 1000000)
-    const safeLimit = parsePositiveInteger(limit, 50, 100)
-    const skip = (safePage - 1) * safeLimit
-
-    const [ expenses, total ] = await Promise.all([
-        expenseModel.find(query)
-            .sort({ date: -1, createdAt: -1 })
-            .skip(skip)
-            .limit(safeLimit)
-            .lean(),
-        expenseModel.countDocuments(query)
-    ])
-
-    return res.status(200).json({
-        expenses,
-        pagination: {
-            total,
-            page: safePage,
-            limit: safeLimit,
-            pages: Math.ceil(total / safeLimit)
-        }
-    })
+    return res.status(200).json({ expenses })
 }
 
 async function getExpenseSummary(req, res) {
-    const { from, to, accountId } = req.query
-
-    if (accountId && !mongoose.isObjectIdOrHexString(accountId)) {
-        return res.status(400).json({ message: "Invalid accountId" })
-    }
-
-    const fromDate = parseOptionalDate(from)
-    const toDate = parseOptionalDate(to)
-    if (fromDate === undefined || toDate === undefined) {
-        return res.status(400).json({ message: "Invalid date filter" })
-    }
-
-    const matchStage = { user: new mongoose.Types.ObjectId(req.user._id), isDeleted: false }
-    if (accountId) matchStage.account = new mongoose.Types.ObjectId(accountId)
-    if (from || to) {
-        matchStage.date = {}
-        if (fromDate) matchStage.date.$gte = fromDate
-        if (toDate) matchStage.date.$lte = toDate
+    const matchStage = {
+        user: new mongoose.Types.ObjectId(req.user._id),
+        isDeleted: false
     }
 
     const [ overallSummary, categoryBreakdown, monthlyTrend ] = await Promise.all([
@@ -334,14 +246,9 @@ async function deleteExpense(req, res) {
     }
 }
 
-function getCategories(req, res) {
-    return res.status(200).json({ categories: CATEGORIES })
-}
-
 module.exports = {
     createExpense,
     getExpenses,
     getExpenseSummary,
-    deleteExpense,
-    getCategories
+    deleteExpense
 }

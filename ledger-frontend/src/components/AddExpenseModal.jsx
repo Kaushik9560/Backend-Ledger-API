@@ -9,8 +9,7 @@ function emptyExpenseForm() {
         type: "expense",
         category: "",
         description: "",
-        date: new Date().toISOString().split("T")[0],
-        tags: ""
+        date: new Date().toISOString().split("T")[0]
     }
 }
 
@@ -102,9 +101,9 @@ export default function AddExpenseModal({ accounts, onClose, onSubmit, busy }) {
                             required
                         >
                             <option value="">Select account...</option>
-                            {accounts.filter((account) => account.status === "ACTIVE").map((account) => (
+                            {accounts.map((account) => (
                                 <option key={account._id} value={account._id}>
-                                    {account.currency} · ...{account._id.slice(-8)}
+                                    INR · ...{account._id.slice(-8)}
                                 </option>
                             ))}
                         </select>

@@ -19,14 +19,12 @@ const expenseSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
-        required: [ true, "Expense must be associated with a user" ],
-        index: true
+        required: [ true, "Expense must be associated with a user" ]
     },
     account: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "account",
-        required: [ true, "Expense must be associated with an account" ],
-        index: true
+        required: [ true, "Expense must be associated with an account" ]
     },
     amount: {
         type: Number,
@@ -60,10 +58,6 @@ const expenseSchema = new mongoose.Schema({
         required: [ true, "Date is required" ],
         default: Date.now
     },
-    tags: {
-        type: [ String ],
-        default: []
-    },
     isDeleted: {
         type: Boolean,
         default: false
@@ -73,17 +67,12 @@ const expenseSchema = new mongoose.Schema({
 })
 
 expenseSchema.index({ user: 1, date: -1 })
-expenseSchema.index({ user: 1, category: 1 })
-expenseSchema.index({ user: 1, type: 1 })
 
 // Hide soft-deleted expenses from normal queries.
 expenseSchema.pre(/^find/, function () {
-    if (!this.getQuery().includeDeleted) {
-        this.where({ isDeleted: false })
-    }
+    this.where({ isDeleted: false })
 })
 
 const expenseModel = mongoose.model("expense", expenseSchema)
 
-module.exports = expenseModel
-module.exports.CATEGORIES = CATEGORIES
+module.exports = { expenseModel, CATEGORIES }

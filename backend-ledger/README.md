@@ -35,12 +35,6 @@ MONGO_URI=mongodb://127.0.0.1:27017/backend-ledger
 JWT_SECRET=replace-with-a-long-random-secret
 FRONTEND_URL=http://localhost:5173
 COOKIE_SAME_SITE=lax
-AUTH_RETURN_TOKEN=false
-EMAIL_ENABLED=false
-EMAIL_USER=
-CLIENT_ID=
-CLIENT_SECRET=
-REFRESH_TOKEN=
 ```
 
 ## Recommended Way To Run
@@ -54,10 +48,7 @@ Why this mode is recommended:
 - no local MongoDB installation is required
 - transfer endpoints work out of the box because Mongo transactions need replica set support
 
-Health endpoints:
-
-- `GET /` -> `Ledger Service is up and running`
-- `GET /api/health` -> JSON health response
+Health endpoint: `GET /api/health`
 
 ## If You Want To Use A Real MongoDB Instance
 
@@ -93,7 +84,6 @@ Use a replica set enabled MongoDB deployment if you want to exercise transfer fl
 | --- | --- |
 | `POST` | `/api/expenses` |
 | `GET` | `/api/expenses` |
-| `GET` | `/api/expenses/categories` |
 | `GET` | `/api/expenses/summary` |
 | `DELETE` | `/api/expenses/:id` |
 
@@ -102,38 +92,3 @@ Use a replica set enabled MongoDB deployment if you want to exercise transfer fl
 | Method | Endpoint |
 | --- | --- |
 | `POST` | `/api/transactions` |
-| `POST` | `/api/transactions/system/initial-funds` |
-
-## Sample Requests
-
-Register:
-
-```powershell
-curl.exe -X POST http://localhost:3000/api/auth/register `
-  -H "Content-Type: application/json" `
-  -d "{\"name\":\"Kaushik\",\"email\":\"kaushik@example.com\",\"password\":\"secret123\"}"
-```
-
-Login:
-
-```powershell
-curl.exe -X POST http://localhost:3000/api/auth/login `
-  -H "Content-Type: application/json" `
-  -d "{\"email\":\"kaushik@example.com\",\"password\":\"secret123\"}"
-```
-
-Create an account with a bearer token:
-
-```powershell
-curl.exe -X POST http://localhost:3000/api/accounts `
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-Record an expense:
-
-```powershell
-curl.exe -X POST http://localhost:3000/api/expenses `
-  -H "Content-Type: application/json" `
-  -H "Authorization: Bearer YOUR_TOKEN" `
-  -d "{\"accountId\":\"ACCOUNT_ID\",\"amount\":450,\"type\":\"expense\",\"category\":\"Food & Dining\",\"description\":\"Lunch\"}"
-```

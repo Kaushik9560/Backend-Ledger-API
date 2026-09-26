@@ -97,12 +97,6 @@ MONGO_URI=mongodb://127.0.0.1:27017/backend-ledger
 JWT_SECRET=replace-with-a-long-random-secret
 FRONTEND_URL=http://localhost:5173
 COOKIE_SAME_SITE=lax
-AUTH_RETURN_TOKEN=false
-EMAIL_ENABLED=false
-EMAIL_USER=
-CLIENT_ID=
-CLIENT_SECRET=
-REFRESH_TOKEN=
 ```
 
 Frontend optional `.env`:
@@ -133,12 +127,10 @@ npm run build
 | `GET` | `/api/accounts` | List user accounts |
 | `GET` | `/api/accounts/balance/:accountId` | Compute balance from ledger entries |
 | `POST` | `/api/expenses` | Record an income or expense |
-| `GET` | `/api/expenses` | List expenses with filters |
-| `GET` | `/api/expenses/categories` | Return supported categories |
+| `GET` | `/api/expenses` | List recent income and expenses |
 | `GET` | `/api/expenses/summary` | Return analytics summary |
 | `DELETE` | `/api/expenses/:id` | Soft-delete an expense and reverse ledger effect |
 | `POST` | `/api/transactions` | Transfer money between accounts |
-| `POST` | `/api/transactions/system/initial-funds` | Seed an account from a system user |
 
 ## Notes For Reviewers
 
