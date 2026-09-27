@@ -65,9 +65,7 @@ const transactionSchema = new mongoose.Schema({
     },
     idempotencyKey: {
         type: String,
-        maxlength: [ 128, "Idempotency key cannot exceed 128 characters" ],
-        unique: true,
-        sparse: true
+        maxlength: [ 128, "Idempotency key cannot exceed 128 characters" ]
     },
     reversesTransaction: {
         type: mongoose.Schema.Types.ObjectId,
@@ -80,6 +78,13 @@ const transactionSchema = new mongoose.Schema({
 })
 
 transactionSchema.index({ user: 1, type: 1, date: -1 })
+transactionSchema.index(
+    { idempotencyKey: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { idempotencyKey: { $type: "string" } }
+    }
+)
 
 const transactionModel = mongoose.model("transaction", transactionSchema)
 

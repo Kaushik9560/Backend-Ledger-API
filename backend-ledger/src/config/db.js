@@ -6,6 +6,10 @@ async function connectToDB(uri = process.env.MONGO_URI) {
     }
 
     await mongoose.connect(uri)
+
+    const { transactionModel } = require("../models/transaction.model")
+    await transactionModel.syncIndexes()
+
     console.log("Server is connected to DB")
 }
 
